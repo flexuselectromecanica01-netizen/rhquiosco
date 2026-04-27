@@ -19,36 +19,42 @@ export default function Home() {
       titulo: "Vacaciones",
       href: "/vacaciones",
       icono: CalendarDays,
+      disabled: false,
     },
     {
       titulo: "Trámites",
       href: "#",
       icono: FileText,
+      disabled: true,
     },
     {
       titulo: "Caja de Ahorro",
       href: "#",
       icono: Wallet,
+      disabled: true,
     },
     {
       titulo: "Nómina",
       href: "#",
       icono: ReceiptText,
+      disabled: true,
     },
     {
       titulo: "Capacitación",
       href: "#",
       icono: GraduationCap,
+      disabled: true,
     },
     {
       titulo: "Incidencias",
       href: "#",
       icono: AlertCircle,
+      disabled: true,
     },
   ];
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+    <div className="flex flex-col bg-gray-100">
 
       {/* CONTENIDO */}
       <main className="flex-1 bg-gray-100 px-6 py-10">
@@ -68,19 +74,53 @@ export default function Home() {
             {botones.map((boton) => {
               const Icono = boton.icono;
 
+              const contenido = (
+                <>
+                  <div
+                    className={`w-16 h-16 rounded-full flex items-center justify-center mb-6 transition ${
+                      boton.disabled
+                        ? "bg-gray-300"
+                        : "bg-emerald-600 group-hover:scale-105"
+                    }`}
+                  >
+                    <Icono
+                      size={30}
+                      className={boton.disabled ? "text-gray-500" : "text-white"}
+                    />
+                  </div>
+
+                  <div>
+                    <h2
+                      className={`text-2xl font-bold ${
+                        boton.disabled ? "text-gray-400" : "text-gray-800"
+                      }`}
+                    >
+                      {boton.titulo}
+                    </h2>
+                  </div>
+                </>
+              );
+
+              if (boton.disabled) {
+                return (
+                  <div
+                    key={boton.titulo}
+                    className="relative bg-white rounded-2xl p-8 min-h-44 shadow-sm flex flex-col justify-between opacity-60 cursor-not-allowed grayscale"
+                  >
+                    {contenido}
+
+                    <div className="absolute inset-0 rounded-2xl bg-white/20"></div>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={boton.titulo}
                   href={boton.href}
                   className="bg-white rounded-2xl p-8 min-h-44 shadow-sm hover:shadow-lg hover:border-b-4 hover:border-emerald-600 transition-all duration-300 flex flex-col justify-between group"
                 >
-                  <div className="w-16 h-16 rounded-full bg-emerald-600 flex items-center justify-center mb-6 group-hover:scale-105 transition">
-                    <Icono size={30} className="text-white" />
-                  </div>
-
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    {boton.titulo}
-                  </h2>
+                  {contenido}
                 </Link>
               );
             })}
