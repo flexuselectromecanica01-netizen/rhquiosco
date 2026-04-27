@@ -90,6 +90,9 @@ export default function Footer(){
         </div>
 
         {/* FOOTER FINAL */}
+        <p className="mt-6 text-sm text-gray-500 text-center bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+            Este sitio es informativo. Para cualquier error, duda o aclaración favor de consultar con RH.
+        </p>
         <footer className="bg-[#111111] text-white py-8">
           <div className="text-center text-sm">
             © Copyright{" "}

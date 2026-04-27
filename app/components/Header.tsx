@@ -38,10 +38,10 @@ export default function Header() {
             <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
               <div className="px-4 py-3 border-b">
                 <p className="text-sm font-semibold text-gray-800">
-                  Usuario
+                  No: 1416
                 </p>
                 <p className="text-xs text-gray-500">
-                  usuario@flexus.com
+                  Juan Diego Trejo Sandoval
                 </p>
               </div>
 

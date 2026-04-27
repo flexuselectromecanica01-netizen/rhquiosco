@@ -161,6 +161,7 @@ export default function Vacaciones() {
           </div>
         </div>
       )}
+      
     </section>
   );
 }
