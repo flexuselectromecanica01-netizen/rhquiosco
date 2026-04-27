@@ -2,6 +2,7 @@
 
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Mail, Lock } from "lucide-react";
+import Image from "next/image";
 
 type LoginForm = {
   email: string;
@@ -20,40 +21,35 @@ export default function Login() {
   };
 
   return (
-    <main className="min-h-screen bg-[#1f252b] flex items-center justify-center px-4 py-10">
-      <section className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 bg-white shadow-2xl overflow-hidden">
-        {/* LADO IZQUIERDO */}
-        <div className="hidden lg:flex relative bg-[#222831] min-h-[560px] items-center justify-center p-10">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1f252b] via-[#26313a] to-[#111827]" />
+  <main className="min-h-screen bg-[#1f252b]">
+    <section className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-white">
+      {/* LADO IZQUIERDO */}
+      <div className="hidden lg:flex relative bg-[#222831] min-h-screen items-center justify-center p-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1f252b] via-[#26313a] to-[#111827]" />
 
-          <div className="relative z-10 text-white">
-            <div className="mb-10">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-[#005b96] flex items-center justify-center">
-                  <div className="w-10 h-10 rounded-full bg-[#9cc600]" />
-                </div>
-
-                <div>
-                  <p className="text-orange-500 text-sm font-bold tracking-wide">
-                    FLEXUS ELECTRO
-                  </p>
-                  <h2 className="text-3xl font-bold mt-1">
-                    Portal interno
-                  </h2>
-                </div>
-              </div>
-            </div>
-
-            <h3 className="text-4xl font-bold leading-tight mb-4">
-              Bienvenido de nuevo
-            </h3>
-
-            <div className="w-14 h-1 bg-[#009b63] mb-6" />
-
+        <div className="relative z-10 text-white">
+          <div className="mb-10">
+                        <div className="flex items-center">
+                          <Image
+                            src="/logo.png"
+                            alt="Flexus Electro"
+                            width={190}
+                            height={60}
+                            className="object-contain"
+                            priority
+                          />
+                        </div>
           </div>
-        </div>
 
-        {/* FORMULARIO */}
+          <h3 className="text-4xl font-bold leading-tight mb-4">
+            Bienvenido de nuevo
+          </h3>
+
+          <div className="w-14 h-1 bg-[#009b63] mb-6" />
+        </div>
+      </div>
+
+      {/* FORMULARIO */}
         <div className="flex items-center justify-center px-6 py-12 sm:px-10 lg:px-14">
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -162,7 +158,7 @@ export default function Login() {
             </p>
           </form>
         </div>
-      </section>
-    </main>
-  );
+    </section>
+  </main>
+);
 }
