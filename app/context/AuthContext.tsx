@@ -1,0 +1,89 @@
+"use client"
+
+import { createContext, useContext, useEffect, useState } from "react"
+
+type Usuario={
+    id:number
+    idempleado:string
+    nombre:string
+    rol:string
+    actualizarpassword:boolean
+}
+
+type AuthContextType={
+    usuario:Usuario | null
+    token: string | null
+    login:(token:string)=>void
+    logout:()=>void
+    cargarUsuario:(token:string)=>Promise<void>
+}
+
+const AuthContext = createContext<AuthContextType | null>(null)
+
+
+export function AuthProvider({children}:{children:React.ReactNode}){
+    const[usuario,setUsuario]=useState<Usuario | null>(null)
+    const [token, setToken] = useState<string | null>(null);
+
+    const cargarUsuario = async (jwt: string) => {
+    const res = await fetch("http://localhost:4008/api/login/me", {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
+
+    if (!res.ok) {
+      logout();
+      return;
+    }
+
+    const data = await res.json();
+
+    setUsuario(data);
+    };
+    const login = async (jwt: string) => {
+    setToken(jwt);
+    localStorage.setItem("token", jwt);
+
+    await cargarUsuario(jwt);
+  };
+  const logout = () => {
+    setUsuario(null);
+    setToken(null);
+
+    localStorage.removeItem("token");
+  };
+  useEffect(() => {
+    const tokenGuardado = localStorage.getItem("token");
+
+    if (tokenGuardado) {
+      setToken(tokenGuardado);
+      cargarUsuario(tokenGuardado);
+    }
+  }, []);
+
+  return (
+    <AuthContext.Provider
+      value={{
+        usuario,
+        token,
+        login,
+        logout,
+        cargarUsuario,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth debe usarse dentro de AuthProvider");
+  }
+
+  return context;
+}

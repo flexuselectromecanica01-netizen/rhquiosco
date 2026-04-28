@@ -23,12 +23,11 @@ export default function Header() {
           />
         </Link>
 
-        {/* Usuario */}
         <div className="relative">
           <button
             type="button"
             onClick={() => setOpenMenu(!openMenu)}
-            className="flex items-center gap-3 text-white hover:text-[#009b63] transition"
+            className="flex items-center gap-3 text-white hover:text-[#009b63] transition cursor-pointer"
             aria-label="Usuario"
           >
             <UserCircle size={34} strokeWidth={1.8} />

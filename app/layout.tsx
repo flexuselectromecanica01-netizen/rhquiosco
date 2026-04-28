@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "./context/AuthContext";
+import { ToastContainer } from "react-toastify";
 
 
 
@@ -32,7 +34,16 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col">
 
         <main className="flex-1">
+          <AuthProvider>
           {children}
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            closeOnClick
+            pauseOnHover
+            draggable
+          />
+          </AuthProvider>
         </main>
 
       </body>
