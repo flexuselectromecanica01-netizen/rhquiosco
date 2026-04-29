@@ -3,6 +3,8 @@
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Lock, CheckCircle } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/navigation";
 
 type UpdatePasswordForm = {
   password: string;
@@ -10,6 +12,9 @@ type UpdatePasswordForm = {
 };
 
 export default function Updatepassword() {
+  const { token, cargarUsuario } = useAuth();
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
@@ -20,16 +25,38 @@ export default function Updatepassword() {
   const password = watch("password");
 
   const onSubmit: SubmitHandler<UpdatePasswordForm> = async (data) => {
-    console.log("Nueva contraseña:", data.password);
+    if (!token) {
+      alert("Sesión expirada. Inicia sesión nuevamente.");
+      router.replace("/login");
+      return;
+    }
 
-    // Aquí después mandas la contraseña al backend
-    // await fetch("/api/update-password", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({
-    //     password: data.password,
-    //   }),
-    // });
+    try {
+      const res = await fetch("http://localhost:4008/api/login/update-password", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          password: data.password,
+        }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        alert(result.message || "Error al actualizar contraseña");
+        return;
+      }
+
+      await cargarUsuario(token);
+
+      alert("Contraseña actualizada correctamente");
+      router.replace("/");
+    } catch (error) {
+      alert("No se pudo conectar con el servidor");
+    }
   };
 
   return (

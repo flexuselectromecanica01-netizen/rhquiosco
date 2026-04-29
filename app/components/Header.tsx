@@ -4,9 +4,19 @@ import Image from "next/image";
 import Link from "next/link";
 import { UserCircle, LogOut, KeyRound } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
   const [openMenu, setOpenMenu] = useState(false);
+  const { usuario, logout } = useAuth();
+  const router = useRouter();
+
+  const cerrarSesion = () => {
+    setOpenMenu(false);
+    logout();
+    router.replace("/login");
+  };
 
   return (
     <header className="w-full bg-[#24282c]/95 shadow-md">
@@ -37,11 +47,13 @@ export default function Header() {
             <div className="absolute right-0 mt-3 w-56 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
               <div className="px-4 py-3 border-b">
                 <p className="text-sm font-semibold text-gray-800">
-                  No: 1416
+                  No: {usuario?.idempleado ?? "Cargando..."}
                 </p>
+
                 <p className="text-xs text-gray-500">
-                  Juan Diego Trejo Sandoval
+                  {usuario?.nombre ?? "Usuario"}
                 </p>
+
               </div>
 
               <Link
@@ -55,10 +67,7 @@ export default function Header() {
 
               <button
                 type="button"
-                onClick={() => {
-                  setOpenMenu(false);
-                  console.log("Cerrar sesión");
-                }}
+                onClick={cerrarSesion}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition text-left"
               >
                 <LogOut size={18} />

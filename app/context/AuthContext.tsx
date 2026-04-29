@@ -8,6 +8,26 @@ type Usuario={
     nombre:string
     rol:string
     actualizarpassword:boolean
+    empleado:{
+      accionsugerida:string
+      antiguedad:number
+      area:string
+      diasavencer:number
+      diasderecho:number
+      diasporvencer:number
+      diastomados:0
+      fechaingreso:string
+      fechacicloactual:string
+      id:number
+      idempleado:string
+      iniciocicloactual:string
+      nombre:string
+      proporcionaldevengado:string
+      puesto:string
+      saldodisponible:string
+      semaforo:string
+      tipoempleado:string
+    }
 }
 
 type AuthContextType={
@@ -44,6 +64,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     const login = async (jwt: string) => {
     setToken(jwt);
     console.log("token", jwt);
+    console.log(usuario)
     localStorage.setItem("token", jwt);
 
     await cargarUsuario(jwt);

@@ -1,11 +1,14 @@
 "use client";
 
+import { useAuth } from "@/app/context/AuthContext";
 import { useState } from "react";
 
 export default function Vacaciones() {
+  const { usuario, logout } = useAuth();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
+  console.log(usuario)
 
   const enviarSolicitud = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -43,19 +46,19 @@ export default function Vacaciones() {
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Antigüedad</p>
-                <p className="text-xl font-semibold text-gray-800">---</p>
+                <p className="text-xl font-semibold text-gray-800">{usuario?.empleado.antiguedad}</p>
               </div>
 
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">
                   Días que tiene derecho
                 </p>
-                <p className="text-xl font-semibold text-gray-800">---</p>
+                <p className="text-xl font-semibold text-gray-800">{usuario?.empleado.diasderecho}</p>
               </div>
 
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Saldo</p>
-                <p className="text-xl font-semibold text-gray-800">---</p>
+                <p className="text-xl font-semibold text-gray-800">{usuario?.empleado.saldodisponible}</p>
               </div>
             </div>
 
@@ -63,19 +66,19 @@ export default function Vacaciones() {
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Fecha de ingreso</p>
-                <p className="text-xl font-semibold text-gray-800">---</p>
+                <p className="text-xl font-semibold text-gray-800">{usuario?.empleado.fechaingreso}</p>
               </div>
 
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Vigencia</p>
-                <p className="text-xl font-semibold text-gray-800">---</p>
+                <p className="text-xl font-semibold text-gray-800">{usuario?.empleado.diasporvencer}</p>
               </div>
 
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">
                   Último periodo de vacaciones
                 </p>
-                <p className="text-xl font-semibold text-gray-800">---</p>
+                <p className="text-xl font-semibold text-gray-800">{usuario?.empleado.fechacicloactual}</p>
               </div>
             </div>
           </div>
