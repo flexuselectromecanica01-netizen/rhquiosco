@@ -10,25 +10,17 @@ type Solicitud = {
   fechatermino: string;
   diastotales: number;
   estatus: string;
-  motivorechazo: string | null;
 };
 
 type EmpleadoVacaciones = {
   id: number;
   idempleado: string;
   nombre: string;
-  tipoempleado: string;
-  area: string;
-  puesto: string;
-  fechaingreso: string;
-  antiguedad: number;
-  diasderecho: number;
-  saldodisponible: string;
   solicitudes: Solicitud[];
 };
 
 export default function Vacaciones() {
-  const [empleado, setEmpleado] = useState<EmpleadoVacaciones | null>(null);
+  const [empleados, setEmpleados] = useState<EmpleadoVacaciones[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,7 +33,7 @@ export default function Vacaciones() {
       }
 
       try {
-        const res = await fetch("http://localhost:4008/api/vacaciones/empleado/0102", {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vacaciones`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -54,7 +46,7 @@ export default function Vacaciones() {
           return;
         }
 
-        setEmpleado(data);
+        setEmpleados(data);
       } catch (error) {
         console.error("Error:", error);
       } finally {
@@ -78,92 +70,90 @@ export default function Vacaciones() {
 
         {loading ? (
           <div className="p-6 text-gray-500">Cargando información...</div>
-        ) : !empleado ? (
+        ) : empleados.length === 0 ? (
           <div className="p-6 text-gray-500">No se encontró información.</div>
-        ) : empleado.solicitudes.length === 0 ? (
-          <div className="p-6 text-gray-500">
-            Este empleado no tiene solicitudes de vacaciones.
-          </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     No:
                   </th>
 
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     Nombre:
                   </th>
 
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     Fecha Inicio
                   </th>
 
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     Fecha Término
                   </th>
 
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     Días Totales
                   </th>
 
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     Estatus
                   </th>
 
-                  <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right w-[140px]">
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700 text-right">
                     Acción
                   </th>
                 </tr>
               </thead>
 
               <tbody>
-                {empleado.solicitudes.map((solicitud) => (
-                  <tr
-                    key={solicitud.id}
-                    className="border-t border-gray-100 hover:bg-gray-50"
-                  >
-                    <td className="px-6 py-4 font-medium text-gray-800">
-                      {empleado.idempleado}
-                    </td>
+                {empleados.flatMap((empleado) =>
+                  empleado.solicitudes.map((solicitud) => (
+                    <tr
+                      key={solicitud.id}
+                      className="border-t border-gray-100 hover:bg-gray-50"
+                    >
+                      <td className="px-6 py-5 font-semibold text-gray-800">
+                        {empleado.idempleado}
+                      </td>
 
-                    <td className="px-6 py-4 text-gray-600">
-                      {empleado.nombre}
-                    </td>
+                      <td className="px-6 py-5 text-gray-700">
+                        {empleado.nombre}
+                      </td>
 
-                    <td className="px-6 py-4 text-gray-600">
-                      {solicitud.fechainicio}
-                    </td>
+                      <td className="px-6 py-5 text-gray-700">
+                        {solicitud.fechainicio}
+                      </td>
 
-                    <td className="px-6 py-4 text-gray-600">
-                      {solicitud.fechatermino}
-                    </td>
+                      <td className="px-6 py-5 text-gray-700">
+                        {solicitud.fechatermino}
+                      </td>
 
-                    <td className="px-6 py-4 text-gray-600">
-                      {solicitud.diastotales}
-                    </td>
+                      <td className="px-6 py-5 text-gray-700">
+                        {solicitud.diastotales}
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
-                        {solicitud.estatus}
-                      </span>
-                    </td>
+                      <td className="px-6 py-5">
+                        <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                          {solicitud.estatus}
+                        </span>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <div className="flex justify-end">
-                        <Link
-                          href={`/administracion/vacaciones/${solicitud.id}`}
-                          className="inline-flex min-w-[90px] items-center justify-center gap-2 whitespace-nowrap bg-[#009b63] text-white px-4 py-2 rounded-xl hover:bg-[#007f52] transition"
-                        >
-                          <Eye size={18} />
-                          <span>Ver</span>
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="px-6 py-5">
+                        <div className="flex justify-end">
+                          <Link
+                            href={`/administracion/vacaciones/${solicitud.id}`}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#009b63] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#007f52]"
+                          >
+                            <Eye size={16} />
+                            Ver
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
