@@ -13,7 +13,7 @@ type Usuario={
 type AuthContextType={
     usuario:Usuario | null
     token: string | null
-    login:(token:string)=>void
+    login:(token:string)=>Promise<void>
     logout:()=>void
     cargarUsuario:(token:string)=>Promise<void>
 }
@@ -43,6 +43,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     };
     const login = async (jwt: string) => {
     setToken(jwt);
+    console.log("token", jwt);
     localStorage.setItem("token", jwt);
 
     await cargarUsuario(jwt);

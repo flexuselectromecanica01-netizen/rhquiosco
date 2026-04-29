@@ -24,7 +24,7 @@ export default function Login() {
 
   const onSubmit: SubmitHandler<LoginForm> = async (data) => {
     try {
-      const res = await fetch("http://localhost:4008/api/login", {
+      const res = await fetch("http://192.168.1.199:4008/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,7 +42,7 @@ export default function Login() {
         return;
       }
 
-      await login(response.access_token);
+      await login(response.token);
 
       toast.success("Inicio de sesión correcto");
 
@@ -87,7 +87,7 @@ export default function Login() {
 
         {/* FORMULARIO */}
         <div className="flex items-center justify-center px-6 py-12 sm:px-10 lg:px-14">
-          <form onSubmit={handleSubmit(onSubmit)} className="w-full max-w-md">
+          <form onSubmit={handleSubmit(onSubmit)} noValidate className="w-full max-w-md">
             <div className="mb-10">
               <p className="text-sm font-bold text-orange-500 uppercase tracking-wide">
                 Flexus Electro
