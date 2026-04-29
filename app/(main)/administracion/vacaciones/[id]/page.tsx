@@ -31,7 +31,7 @@ type SolicitudDetalle = {
 export default async function DetalleVacaciones({ params }: Props) {
   const { id } = await params;
 
-  const res = await fetch(`http://localhost:4008/api/solicitudes/${id}`, {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}`, {
     cache: "no-store",
   });
 
