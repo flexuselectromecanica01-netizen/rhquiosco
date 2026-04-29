@@ -8,10 +8,24 @@ import { useAuth } from "../context/AuthContext";
 export default function ProtectedRoute({children}:{children:React.ReactNode}){
     const router = useRouter();
     const[validando,setValidando]=useState(true)
-    const { usuario } = useAuth();
+    const { usuario,loading,token } = useAuth();
      const pathname = usePathname();
+
+    const rutaPorRol=(rol:string)=>{
+        switch(rol.toLocaleLowerCase()){
+            case "supervisor":
+                return "/supervisor";
+            case "administrador":
+                return "/administracion"
+            case "empleado":
+                return "/"
+            default:
+                return "/"
+        }
+    }
+
     useEffect(()=>{
-        const token =localStorage.getItem("token")
+        if (loading) return;
         if(!token || !usuario){
             router.replace('/login');
             return
@@ -21,10 +35,27 @@ export default function ProtectedRoute({children}:{children:React.ReactNode}){
             return;
         }
         if (usuario.actualizarpassword === false && pathname === "/update-password") {
-            router.replace("/");
+            router.replace(rutaPorRol(usuario.rol));
             return;
         }
+        if (usuario.actualizarpassword === false && pathname === "/") {
+    const destino = rutaPorRol(usuario.rol);
+
+    if (destino !== pathname) {
+      router.replace(destino);
+      return;
+    }
+  }
     setValidando(false)
     },[router,usuario, pathname])
+
+
+    if (loading || validando) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <p className="text-gray-600 font-medium">Validando sesión...</p>
+      </div>
+    );
+  }
     return <>{children}</>
 }

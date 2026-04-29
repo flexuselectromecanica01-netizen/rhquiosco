@@ -33,6 +33,7 @@ type Usuario={
 type AuthContextType={
     usuario:Usuario | null
     token: string | null
+     loading: boolean;
     login:(token:string)=>Promise<void>
     logout:()=>void
     cargarUsuario:(token:string)=>Promise<void>
@@ -44,9 +45,11 @@ const AuthContext = createContext<AuthContextType | null>(null)
 export function AuthProvider({children}:{children:React.ReactNode}){
     const[usuario,setUsuario]=useState<Usuario | null>(null)
     const [token, setToken] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
     const cargarUsuario = async (jwt: string) => {
-    const res = await fetch("https://rhquioscobackend.onrender.com/api/login/me", {
+  try {
+    const res = await fetch("http://localhost:4008/api/login/me", {
       headers: {
         Authorization: `Bearer ${jwt}`,
       },
@@ -58,17 +61,22 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     }
 
     const data = await res.json();
-
     setUsuario(data);
-    };
-    const login = async (jwt: string) => {
-    setToken(jwt);
-    console.log("token", jwt);
-    console.log(usuario)
-    localStorage.setItem("token", jwt);
+  } catch (error) {
+    logout();
+  } finally {
+    setLoading(false);
+  }
+};
 
-    await cargarUsuario(jwt);
-  };
+const login = async (jwt: string) => {
+  setLoading(true);
+  setToken(jwt);
+  localStorage.setItem("token", jwt);
+
+  await cargarUsuario(jwt);
+};
+
   const logout = () => {
     setUsuario(null);
     setToken(null);
@@ -81,6 +89,8 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     if (tokenGuardado) {
       setToken(tokenGuardado);
       cargarUsuario(tokenGuardado);
+    }else {
+    setLoading(false);
     }
   }, []);
 
@@ -89,6 +99,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
       value={{
         usuario,
         token,
+        loading,
         login,
         logout,
         cargarUsuario,

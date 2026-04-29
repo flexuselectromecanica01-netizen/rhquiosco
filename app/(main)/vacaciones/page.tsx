@@ -10,18 +10,46 @@ export default function Vacaciones() {
   const [fechaTermino, setFechaTermino] = useState("");
   console.log(usuario)
 
-  const enviarSolicitud = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const enviarSolicitud = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
 
-    console.log("Fecha inicio:", fechaInicio);
-    console.log("Fecha término:", fechaTermino);
+  const token = localStorage.getItem("token");
 
-    // Aquí puedes conectar tu API o lógica para enviar la solicitud
+  if (!token) {
+    alert("Sesión expirada. Inicia sesión nuevamente.");
+    return;
+  }
+
+  try {
+    const res = await fetch("http://localhost:4008/api/solicitudes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        fechainicio: fechaInicio,
+        fechatermino: fechaTermino,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Error al enviar solicitud");
+      return;
+    }
+
+    alert("Solicitud enviada correctamente");
 
     setModalAbierto(false);
     setFechaInicio("");
     setFechaTermino("");
-  };
+  } catch (error) {
+    console.error(error);
+    alert("No se pudo conectar con el servidor");
+  }
+};
 
   return (
     <section className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-12">

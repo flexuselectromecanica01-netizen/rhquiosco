@@ -24,7 +24,7 @@ export default function Login() {
 
   const onSubmit: SubmitHandler<LoginForm> = async (data) => {
     try {
-      const res = await fetch("https://rhquioscobackend.onrender.com/api/login", {
+      const res = await fetch("http://192.168.1.199:4008/api/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -32,7 +32,7 @@ export default function Updatepassword() {
     }
 
     try {
-      const res = await fetch("https://rhquioscobackend.onrender.com/api/login/update-password", {
+      const res = await fetch("http://localhost:4008/api/login/update-password", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
