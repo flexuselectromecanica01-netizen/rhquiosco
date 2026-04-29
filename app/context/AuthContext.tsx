@@ -46,7 +46,13 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     const[usuario,setUsuario]=useState<Usuario | null>(null)
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const logout = () => {
+    setUsuario(null);
+    setToken(null);
 
+    localStorage.removeItem("token");
+    setLoading(false);
+  };
     const cargarUsuario = async (jwt: string) => {
   try {
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login/me`, {
@@ -77,21 +83,19 @@ const login = async (jwt: string) => {
   await cargarUsuario(jwt);
 };
 
-  const logout = () => {
-    setUsuario(null);
-    setToken(null);
-
-    localStorage.removeItem("token");
-  };
+  
   useEffect(() => {
     const tokenGuardado = localStorage.getItem("token");
 
-    if (tokenGuardado) {
-      setToken(tokenGuardado);
-      cargarUsuario(tokenGuardado);
-    }else {
-    setLoading(false);
-    }
+    if (!tokenGuardado) {
+  setUsuario(null);
+  setToken(null);
+  setLoading(false);
+  return;
+}
+
+setToken(tokenGuardado);
+cargarUsuario(tokenGuardado);
   }, []);
 
   return (
