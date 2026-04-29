@@ -46,7 +46,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
     const [token, setToken] = useState<string | null>(null);
 
     const cargarUsuario = async (jwt: string) => {
-    const res = await fetch("http://localhost:4008/api/login/me", {
+    const res = await fetch("https://rhquioscobackend.onrender.com/api/login/me", {
       headers: {
         Authorization: `Bearer ${jwt}`,
       },
