@@ -21,7 +21,7 @@ export default function Vacaciones() {
   }
 
   try {
-    const res = await fetch("http://localhost:4008/api/solicitudes", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/solicitudes`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -49,7 +49,7 @@ export function AuthProvider({children}:{children:React.ReactNode}){
 
     const cargarUsuario = async (jwt: string) => {
   try {
-    const res = await fetch("http://localhost:4008/api/login/me", {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login/me`, {
       headers: {
         Authorization: `Bearer ${jwt}`,
       },

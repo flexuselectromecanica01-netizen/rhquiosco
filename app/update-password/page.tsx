@@ -32,7 +32,7 @@ export default function Updatepassword() {
     }
 
     try {
-      const res = await fetch("http://localhost:4008/api/login/update-password", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login/update-password`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
