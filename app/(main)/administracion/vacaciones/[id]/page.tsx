@@ -1,8 +1,8 @@
-type Props = {
-  params: Promise<{
-    id: string;
-  }>;
-};
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useAuth } from "@/app/context/AuthContext";
 
 type SolicitudDetalle = {
   id: number;
@@ -28,19 +28,77 @@ type SolicitudDetalle = {
   };
 };
 
-export default async function DetalleVacaciones({ params }: Props) {
-  const { id } = await params;
+export default function DetalleVacaciones() {
+  const { token } = useAuth();
+  const params = useParams();
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}`, {
-    cache: "no-store",
-  });
+  const id = params.id as string;
 
-  if (!res.ok) {
+  const [solicitud, setSolicitud] = useState<SolicitudDetalle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const cargarSolicitud = async () => {
+      if (!token) {
+        setError("No hay token. Inicia sesión nuevamente.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (res.status === 401) {
+          setError("No autorizado. Tu sesión expiró o no tienes permisos.");
+          return;
+        }
+
+        if (res.status === 404) {
+          setError("Solicitud no encontrada.");
+          return;
+        }
+
+        if (!res.ok) {
+          setError(`Error al cargar solicitud. Código: ${res.status}`);
+          return;
+        }
+
+        const data = await res.json();
+        setSolicitud(data);
+      } catch {
+        setError("Error de conexión con el servidor.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    cargarSolicitud();
+  }, [id, token]);
+
+  if (loading) {
     return (
       <main className="bg-gray-100 px-6 py-10">
         <section className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md border border-gray-200 p-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">
-            Solicitud no encontrada
+          <p className="text-gray-600">Cargando solicitud...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="bg-gray-100 px-6 py-10">
+        <section className="max-w-4xl mx-auto bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+          <h1 className="text-3xl font-bold text-red-600 mb-4">
+            {error}
           </h1>
 
           <p className="text-gray-600">
@@ -54,7 +112,10 @@ export default async function DetalleVacaciones({ params }: Props) {
     );
   }
 
-  const solicitud: SolicitudDetalle = await res.json();
+  if (!solicitud) {
+    return null;
+  }
+
   const empleado = solicitud.empleado;
 
   return (
