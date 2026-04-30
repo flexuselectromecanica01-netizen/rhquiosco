@@ -10,6 +10,8 @@ export default function Vacaciones() {
   const [fechaTermino, setFechaTermino] = useState("");
   console.log(usuario)
 
+  
+
   const enviarSolicitud = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
 

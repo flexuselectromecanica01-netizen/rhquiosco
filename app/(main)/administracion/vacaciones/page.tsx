@@ -11,6 +11,7 @@ type Solicitud = {
   diastotales: number;
   estatus: string;
   motivorechazo: string | null;
+   fechacreacion: string;
 };
 
 type EmpleadoVacaciones = {
@@ -83,6 +84,13 @@ export default function Vacaciones() {
       nombre: empleado.nombre,
     }))
   );
+  const formatearFecha = (fecha: string) => {
+  return new Date(fecha).toLocaleDateString("es-MX", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+};
 
   return (
     <main className="bg-gray-100 px-6 py-10">
@@ -113,6 +121,10 @@ export default function Vacaciones() {
                   <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     Nombre:
                   </th>
+
+                  <th className="px-6 py-5 text-sm font-semibold text-gray-700">
+  Fecha Solicitud
+</th>
 
                   <th className="px-6 py-5 text-sm font-semibold text-gray-700">
                     Fecha Inicio
@@ -151,6 +163,10 @@ export default function Vacaciones() {
                     </td>
 
                     <td className="px-6 py-5 text-gray-700">
+  {formatearFecha(solicitud.fechacreacion)}
+</td>
+
+                    <td className="px-6 py-5 text-gray-700">
                       {solicitud.fechainicio}
                     </td>
 
@@ -167,7 +183,7 @@ export default function Vacaciones() {
                         className={`rounded-full px-3 py-1 text-xs font-semibold ${
                           solicitud.estatus === "PENDIENTE"
                             ? "bg-yellow-100 text-yellow-700"
-                            : solicitud.estatus === "APROBADO"
+                            : solicitud.estatus === "APROBADA"
                             ? "bg-green-100 text-green-700"
                             : "bg-red-100 text-red-700"
                         }`}

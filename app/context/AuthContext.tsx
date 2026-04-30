@@ -27,6 +27,15 @@ type Usuario={
       saldodisponible:string
       semaforo:string
       tipoempleado:string
+      solicitudes: {
+  id: number;
+  fechainicio: string;
+  fechatermino: string;
+  diastotales: number;
+  estatus: string;
+  motivorechazo: string | null;
+  fechacreacion: string;
+}[];
     }
 }
 
