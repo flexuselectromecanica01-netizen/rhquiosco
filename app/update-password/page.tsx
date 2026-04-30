@@ -63,30 +63,42 @@ export default function Updatepassword() {
   <main className="min-h-screen bg-[#1f252b]">
     <section className="min-h-screen w-full grid grid-cols-1 lg:grid-cols-2 bg-white">
       {/* FORMULARIO A LA IZQUIERDA */}
-      <div className="min-h-screen flex items-center justify-center px-6 py-12 sm:px-10 lg:px-20">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 py-8 sm:px-6 sm:py-10 lg:bg-white lg:px-20 lg:py-12">
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="w-full max-w-md"
+          className="w-full max-w-md rounded-2xl bg-white px-5 py-8 shadow-md sm:px-8 sm:py-10 lg:rounded-none lg:p-0 lg:shadow-none"
         >
-          <div className="mb-10">
-            <p className="text-sm font-bold text-orange-500 uppercase tracking-wide">
+          {/* LOGO SOLO EN MOBILE/TABLET */}
+          <div className="mb-8 flex justify-center lg:hidden">
+            <Image
+              src="/logo.png"
+              alt="Flexus Electro"
+              width={170}
+              height={55}
+              className="object-contain"
+              priority
+            />
+          </div>
+
+          <div className="mb-8 sm:mb-10">
+            <p className="text-xs font-bold text-orange-500 uppercase tracking-wide sm:text-sm">
               Flexus Electro
             </p>
 
-            <h1 className="text-3xl font-bold text-gray-800 mt-2">
+            <h1 className="mt-2 text-2xl font-bold text-gray-800 sm:text-3xl">
               Cambiar contraseña
             </h1>
 
-            <div className="w-12 h-1 bg-[#009b63] mt-4" />
+            <div className="mt-4 h-1 w-12 bg-[#009b63]" />
 
-            <p className="text-gray-500 mt-5">
+            <p className="mt-5 text-sm text-gray-500 sm:text-base">
               Esta actualización solo será necesaria la primera vez que
               inicies sesión.
             </p>
           </div>
 
           <div className="mb-5">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
               Nueva contraseña
             </label>
 
@@ -110,24 +122,23 @@ export default function Updatepassword() {
                     message: "Debe incluir al menos una mayúscula y un número",
                   },
                 })}
-                className={`w-full border rounded-md pl-12 pr-4 py-3 outline-none transition
-                  ${
-                    errors.password
-                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                      : "border-gray-300 focus:border-[#009b63] focus:ring-2 focus:ring-green-100"
-                  }`}
+                className={`w-full rounded-md border py-3 pl-12 pr-4 text-base outline-none transition ${
+                  errors.password
+                    ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                    : "border-gray-300 focus:border-[#009b63] focus:ring-2 focus:ring-green-100"
+                }`}
               />
             </div>
 
             {errors.password?.message && (
-              <p className="text-red-500 text-sm mt-2">
+              <p className="mt-2 text-sm text-red-500">
                 {errors.password.message}
               </p>
             )}
           </div>
 
           <div className="mb-7">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
               Confirmar contraseña
             </label>
 
@@ -145,17 +156,16 @@ export default function Updatepassword() {
                   validate: (value) =>
                     value === password || "Las contraseñas no coinciden",
                 })}
-                className={`w-full border rounded-md pl-12 pr-4 py-3 outline-none transition
-                  ${
-                    errors.confirmPassword
-                      ? "border-red-500 focus:ring-2 focus:ring-red-200"
-                      : "border-gray-300 focus:border-[#009b63] focus:ring-2 focus:ring-green-100"
-                  }`}
+                className={`w-full rounded-md border py-3 pl-12 pr-4 text-base outline-none transition ${
+                  errors.confirmPassword
+                    ? "border-red-500 focus:ring-2 focus:ring-red-200"
+                    : "border-gray-300 focus:border-[#009b63] focus:ring-2 focus:ring-green-100"
+                }`}
               />
             </div>
 
             {errors.confirmPassword?.message && (
-              <p className="text-red-500 text-sm mt-2">
+              <p className="mt-2 text-sm text-red-500">
                 {errors.confirmPassword.message}
               </p>
             )}
@@ -164,12 +174,12 @@ export default function Updatepassword() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-[#009b63] text-white py-3 rounded-md font-bold hover:bg-[#008554] transition disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full rounded-md bg-[#009b63] py-3 text-base font-bold text-white transition hover:bg-[#008554] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? "Actualizando..." : "Actualizar contraseña"}
           </button>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
+          <p className="mt-6 text-center text-xs text-gray-500 sm:text-sm">
             © {new Date().getFullYear()} Flexus Electro
           </p>
         </form>
@@ -182,19 +192,17 @@ export default function Updatepassword() {
         <div className="relative z-10 text-white max-w-md">
           <div className="mb-10">
             <div className="flex items-center gap-4">
-              
-
               {/* Logo */}
-                          <div className="flex items-center">
-                            <Image
-                              src="/logo.png"
-                              alt="Flexus Electro"
-                              width={190}
-                              height={60}
-                              className="object-contain"
-                              priority
-                            />
-                          </div>
+              <div className="flex items-center">
+                <Image
+                  src="/logo.png"
+                  alt="Flexus Electro"
+                  width={190}
+                  height={60}
+                  className="object-contain"
+                  priority
+                />
+              </div>
             </div>
           </div>
 
