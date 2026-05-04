@@ -4,29 +4,6 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 
-type SolicitudDetalle = {
-  id: number;
-  fechainicio: string;
-  fechatermino: string;
-  diastotales: number;
-  estatus: string;
-  motivorechazo: string | null;
-  empleado: {
-    id: number;
-    idempleado: string;
-    nombre: string;
-    tipoempleado: string;
-    area: string;
-    puesto: string;
-    fechaingreso: string;
-    antiguedad: number;
-    diasderecho: number;
-    diastomados: number;
-    saldodisponible: string;
-    semaforo: string;
-    accionsugerida: string;
-  };
-};
 
 export default function DetalleVacaciones() {
   const { token } = useAuth();

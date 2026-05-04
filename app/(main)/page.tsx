@@ -1,16 +1,11 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
-  User,
   CalendarDays,
   FileText,
   Wallet,
   ReceiptText,
   GraduationCap,
-  AlertCircle,
-  MapPin,
-  Mail,
-  Phone,
+  AlertCircle
 } from "lucide-react";
 
 export default function Home() {

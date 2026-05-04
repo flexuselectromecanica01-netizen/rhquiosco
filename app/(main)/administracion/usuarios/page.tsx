@@ -4,13 +4,6 @@ import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Plus, Pencil, Trash2, Upload } from "lucide-react";
 
-type Usuario = {
-  id: number;
-  nombre: string;
-  correo: string;
-  puesto: string;
-  departamento: string;
-};
 
 export default function Usuarios() {
   const inputExcelRef = useRef<HTMLInputElement | null>(null);

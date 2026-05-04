@@ -4,11 +4,10 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useState } from "react";
 
 export default function Vacaciones() {
-  const { usuario, logout } = useAuth();
+  const { usuario } = useAuth();
   const [modalAbierto, setModalAbierto] = useState(false);
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
-  console.log(usuario)
 
   
 

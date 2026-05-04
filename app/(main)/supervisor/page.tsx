@@ -5,7 +5,6 @@ import { useAuth } from "@/app/context/AuthContext";
 
 export default function Supervisor() {
   const{usuario}=useAuth()
-  console.log(usuario)
   return (
     <main className="bg-gray-100 px-6 py-10">
       <section className="max-w-4xl mx-auto">

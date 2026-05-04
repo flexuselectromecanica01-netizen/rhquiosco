@@ -4,37 +4,7 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 
-type Solicitud = {
-  id: number;
-  fechainicio: string;
-  fechatermino: string;
-  diastotales: number;
-  estatus: string;
-  motivorechazo: string | null;
-   fechacreacion: string;
-};
 
-type EmpleadoVacaciones = {
-  id: number;
-  idempleado: string;
-  nombre: string;
-  tipoempleado: string;
-  area: string;
-  puesto: string;
-  fechaingreso: string;
-  antiguedad: number;
-  diasderecho: number;
-  inicioactual: string;
-  finalactual: string;
-  proporcionaldevengado: string;
-  diastomados: number;
-  saldodisponible: string;
-  diasporvencer: number;
-  diasavencer: number;
-  semaforo: string;
-  accionsugerida: string;
-  solicitudes: Solicitud[];
-};
 
 export default function Vacaciones() {
   const [empleados, setEmpleados] = useState<EmpleadoVacaciones[]>([]);

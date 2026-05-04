@@ -4,38 +4,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { Check, X, User, CalendarDays } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-type Solicitud = {
-  id: number;
-  fechainicio: string;
-  fechatermino: string;
-  diastotales: number;
-  estatus: string;
-  motivorechazo: string | null;
-   fechacreacion: string;
-};
 
-type EmpleadoVacaciones = {
-  id: number;
-  idempleado: string;
-  nombre: string;
-  area: string;
-  puesto: string;
-  solicitudes: Solicitud[];
-};
-
-type SolicitudTabla = {
-  id: number;
-  empleado: string;
-  idempleado: string;
-  fechaCreacion: string;
-  departamento: string;
-  puesto: string;
-  fechaInicio: string;
-  fechaFin: string;
-  diasSolicitados: number;
-  motivo: string;
-  estatus: string;
-};
 
 export default function AutorizacionVacaciones() {
   const { usuario, token } = useAuth();
