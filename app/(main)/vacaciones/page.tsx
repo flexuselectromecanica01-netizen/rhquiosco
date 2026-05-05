@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { useState } from "react";
+import { useState,useEffect } from "react";
+import { toast } from "react-toastify";
 
 export default function Vacaciones() {
   const { usuario } = useAuth();
@@ -14,6 +15,122 @@ export default function Vacaciones() {
 
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
+
+  const convertirFechaLocal = (fecha: string) => {
+  const [year, month, day] = fecha.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+const formatearFechaInput = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+const obtenerFechaLimiteVacaciones = () => {
+  const fechaIngreso = usuario?.empleado?.fechaingreso;
+
+  if (!fechaIngreso) return "";
+
+  const hoy = new Date();
+  const ingreso = convertirFechaLocal(fechaIngreso);
+
+  const yearActual = hoy.getFullYear();
+  const monthIngreso = ingreso.getMonth();
+  const dayIngreso = ingreso.getDate();
+
+  const fechaLimite = new Date(yearActual, monthIngreso, dayIngreso);
+
+  return formatearFechaInput(fechaLimite);
+};
+
+const contarDiasHabiles = (inicio: string, termino: string) => {
+  let contador = 0;
+
+  const fechaActual = convertirFechaLocal(inicio);
+  const fechaFinal = convertirFechaLocal(termino);
+
+  while (fechaActual <= fechaFinal) {
+    const fechaTexto = formatearFechaInput(fechaActual);
+
+    if (!esFinDeSemana(fechaTexto) && !esDiaFestivo(fechaTexto)) {
+      contador++;
+    }
+
+    fechaActual.setDate(fechaActual.getDate() + 1);
+  }
+
+  return contador;
+};
+
+  const obtenerFechaHoy=()=>{
+    const hoy = new Date()
+    const year = hoy.getFullYear()
+    const month = String(hoy.getMonth() + 1).padStart(2, "0");
+  const day = String(hoy.getDate()).padStart(2, "0");
+   return `${year}-${month}-${day}`;
+  }
+
+  const diasFestivos = [
+  "2026-01-01",
+  "2026-02-02",
+  "2026-03-16",
+  "2026-05-01",
+  "2026-09-16",
+  "2026-11-16",
+  "2026-12-25",
+];
+
+const esFinDeSemana = (fecha: string) => {
+  const [year, month, day] = fecha.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const dia = date.getDay();
+
+  return dia === 0 || dia === 6;
+};
+
+const esDiaFestivo = (fecha: string) => {
+  return diasFestivos.includes(fecha);
+};
+
+const validarFecha = (fecha: string) => {
+  const hoy = obtenerFechaHoy();
+  const fechaLimite = obtenerFechaLimiteVacaciones();
+
+  if (!fecha) {
+    return "Debes seleccionar una fecha.";
+  }
+
+  if (fecha < hoy) {
+    return "No puedes seleccionar fechas pasadas.";
+  }
+
+  if (fechaLimite && fecha > fechaLimite) {
+    return `Solo puedes tomar vacaciones hasta el ${fechaLimite}.`;
+  }
+
+  if (esFinDeSemana(fecha)) {
+    return "No puedes seleccionar sábados ni domingos.";
+  }
+
+  if (esDiaFestivo(fecha)) {
+    return "No puedes seleccionar días festivos.";
+  }
+
+  return null;
+};
+
+  useEffect(()=>{
+    const hayModalAbierto = modalAbierto || modalPeriodoAbierto;
+    if(hayModalAbierto){
+      document.body.style.overflow="hidden"
+    }else{
+      document.body.style.overflow=""
+    }
+    return()=>{
+      document.body.style.overflow=""
+    }
+  },[modalAbierto,modalPeriodoAbierto])
 
   const abrirModalPeriodo = async () => {
     const token = localStorage.getItem("token");
@@ -62,49 +179,75 @@ export default function Vacaciones() {
   };
 
   const enviarSolicitud = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  e.preventDefault();
+  const diasDerecho = Number(usuario?.empleado?.diasderecho ?? 0);
+const diasSolicitados = contarDiasHabiles(fechaInicio, fechaTermino);
 
-    const token = localStorage.getItem("token");
+if (diasSolicitados > diasDerecho) {
+  toast.error(
+    `Solo tienes derecho a ${diasDerecho} días. Estás solicitando ${diasSolicitados} días hábiles.`
+  );
+  return;
+}
 
-    if (!token) {
-      alert("Sesión expirada. Inicia sesión nuevamente.");
+  const errorFechaInicio = validarFecha(fechaInicio);
+  const errorFechaTermino = validarFecha(fechaTermino);
+
+  if (errorFechaInicio) {
+    toast.error(`Fecha inicio: ${errorFechaInicio}`);
+    return;
+  }
+
+  if (errorFechaTermino) {
+    toast.error(`Fecha término: ${errorFechaTermino}`);
+    return;
+  }
+
+  if (fechaTermino < fechaInicio) {
+    toast.error("La fecha término no puede ser menor que la fecha inicio.");
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    toast.error("Sesión expirada. Inicia sesión nuevamente.");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/solicitudes`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          fechainicio: fechaInicio,
+          fechatermino: fechaTermino,
+        }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.message || "Error al enviar solicitud");
       return;
     }
 
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/solicitudes`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            fechainicio: fechaInicio,
-            fechatermino: fechaTermino,
-          }),
-        }
-      );
+    toast.success("Solicitud enviada correctamente");
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Error al enviar solicitud");
-        return;
-      }
-
-      alert("Solicitud enviada correctamente");
-
-      setModalAbierto(false);
-      setFechaInicio("");
-      setFechaTermino("");
-    } catch (error) {
-      console.error(error);
-      alert("No se pudo conectar con el servidor");
-    }
-  };
-
+    setModalAbierto(false);
+    setFechaInicio("");
+    setFechaTermino("");
+  } catch (error) {
+    console.error(error);
+    toast.error("No se pudo conectar con el servidor");
+  }
+};
   return (
     <section className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-6xl">
@@ -187,7 +330,7 @@ export default function Vacaciones() {
             <button
               type="button"
               onClick={() => setModalAbierto(true)}
-              className="w-full rounded-xl bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 sm:w-auto sm:px-8 sm:text-lg"
+              className="w-full rounded-xl cursor-pointer bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 sm:w-auto sm:px-8 sm:text-lg"
             >
               Solicitud de Vacaciones
             </button>
@@ -224,7 +367,21 @@ export default function Vacaciones() {
                 <input
                   type="date"
                   value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
+                    min={obtenerFechaHoy()}
+                    max={obtenerFechaLimiteVacaciones()}
+  onChange={(e) => {
+    const fecha = e.target.value;
+    const error = validarFecha(fecha);
+
+    if (error) {
+      toast.error(error);
+      setFechaInicio("");
+      return;
+    }
+
+    setFechaInicio(fecha);
+  }}
+
                   required
                   className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -238,7 +395,26 @@ export default function Vacaciones() {
                 <input
                   type="date"
                   value={fechaTermino}
-                  onChange={(e) => setFechaTermino(e.target.value)}
+                  min={fechaInicio || obtenerFechaHoy()}
+                  max={obtenerFechaLimiteVacaciones()}
+  onChange={(e) => {
+    const fecha = e.target.value;
+    const error = validarFecha(fecha);
+
+    if (error) {
+      toast.error(error);
+      setFechaTermino("");
+      return;
+    }
+
+    if (fechaInicio && fecha < fechaInicio) {
+      toast.error("La fecha término no puede ser menor que la fecha inicio.");
+      setFechaTermino("");
+      return;
+    }
+
+    setFechaTermino(fecha);
+  }}
                   required
                   className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
@@ -248,14 +424,14 @@ export default function Vacaciones() {
                 <button
                   type="button"
                   onClick={() => setModalAbierto(false)}
-                  className="w-full rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 sm:w-auto"
+                  className="w-full rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 sm:w-auto cursor-pointer"
                 >
                   Cancelar
                 </button>
 
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95 sm:w-auto"
+                  className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95 sm:w-auto cursor-pointer"
                 >
                   Enviar
                 </button>
@@ -357,7 +533,7 @@ export default function Vacaciones() {
               <button
                 type="button"
                 onClick={() => setModalPeriodoAbierto(false)}
-                className="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
+                className="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95 cursor-pointer"
               >
                 Cerrar
               </button>

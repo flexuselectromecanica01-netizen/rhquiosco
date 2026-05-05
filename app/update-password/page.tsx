@@ -5,6 +5,7 @@ import { Lock, CheckCircle } from "lucide-react";
 import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 type UpdatePasswordForm = {
   password: string;
@@ -26,7 +27,7 @@ export default function Updatepassword() {
 
   const onSubmit: SubmitHandler<UpdatePasswordForm> = async (data) => {
     if (!token) {
-      alert("Sesión expirada. Inicia sesión nuevamente.");
+      toast.error("Sesión expirada. Inicia sesión nuevamente.");
       router.replace("/login");
       return;
     }
@@ -46,16 +47,16 @@ export default function Updatepassword() {
       const result = await res.json();
 
       if (!res.ok) {
-        alert(result.message || "Error al actualizar contraseña");
+        toast.error(result.message || "Error al actualizar contraseña");
         return;
       }
 
       await cargarUsuario(token);
 
-      alert("Contraseña actualizada correctamente");
+      toast.success("Contraseña actualizada correctamente");
       router.replace("/");
     } catch (error) {
-      alert("No se pudo conectar con el servidor");
+      toast.error("No se pudo conectar con el servidor");
     }
   };
 
