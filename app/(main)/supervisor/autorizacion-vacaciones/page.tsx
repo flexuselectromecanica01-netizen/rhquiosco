@@ -36,7 +36,6 @@ export default function AutorizacionVacaciones() {
       );
 
       const data: EmpleadoVacaciones[] = await res.json();
-        console.log(data)
 
 
       if (!res.ok) {
@@ -77,7 +76,7 @@ export default function AutorizacionVacaciones() {
 
   const aprobarSolicitud = async (id: number) => {
     if (!token) {
-      alert("Sesión expirada. Inicia sesión nuevamente.");
+      toast.warning("Sesión expirada. Inicia sesión nuevamente.");
       return;
     }
 
@@ -97,15 +96,14 @@ export default function AutorizacionVacaciones() {
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.message || "Error al aprobar solicitud");
+        toast.error(data.message || "Error al aprobar solicitud");
         return;
       }
 
-      alert("Solicitud aprobada correctamente");
+      toast.success("Solicitud aprobada correctamente");
       await obtenerSolicitudesPorArea();
     } catch (error) {
-      console.error("Error al aprobar solicitud:", error);
-      alert("No se pudo conectar con el servidor");
+      toast.warning("No se pudo conectar con el servidor");
     } finally {
       setProcesandoId(null);
     }
@@ -113,7 +111,7 @@ export default function AutorizacionVacaciones() {
 
   const rechazarSolicitud = async (id: number) => {
     if (!token) {
-      alert("Sesión expirada. Inicia sesión nuevamente.");
+      toast.warning("Sesión expirada. Inicia sesión nuevamente.");
       return;
     }
 
@@ -145,15 +143,14 @@ export default function AutorizacionVacaciones() {
 
 
       if (!res.ok) {
-        alert(data.message || "Error al rechazar solicitud");
+        toast.error(data.message || "Error al rechazar solicitud");
         return;
       }
 
       toast.success("Solicitud rechazada correctamente");
       await obtenerSolicitudesPorArea();
     } catch (error) {
-      console.error("Error al rechazar solicitud:", error);
-      alert("No se pudo conectar con el servidor");
+      toast.warning("No se pudo conectar con el servidor");
     } finally {
       setProcesandoId(null);
     }
