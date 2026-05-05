@@ -4,6 +4,7 @@ import { useAuth } from "@/app/context/AuthContext";
 import { formatearFecha } from "@/src/utils/formatearFecha";
 import { Check, X, User, CalendarDays } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "react-toastify";
 
 
 
@@ -119,7 +120,7 @@ export default function AutorizacionVacaciones() {
     const motivo = prompt("Escribe el motivo del rechazo:");
 
     if (!motivo || motivo.trim().length === 0) {
-      alert("Debes escribir un motivo de rechazo");
+      toast.warning("Debes escribir un motivo de rechazo");
       return;
     }
 
@@ -148,7 +149,7 @@ export default function AutorizacionVacaciones() {
         return;
       }
 
-      alert("Solicitud rechazada correctamente");
+      toast.success("Solicitud rechazada correctamente");
       await obtenerSolicitudesPorArea();
     } catch (error) {
       console.error("Error al rechazar solicitud:", error);
@@ -323,7 +324,7 @@ export default function AutorizacionVacaciones() {
                             type="button"
                             disabled={!esPendiente || procesando}
                             onClick={() => rechazarSolicitud(solicitud.id)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center gap-2  rounded-xl bg-red-600 px-4 py-2 text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                           >
                             <X size={18} />
                             Rechazar
