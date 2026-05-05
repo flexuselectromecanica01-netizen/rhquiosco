@@ -3,3 +3,33 @@
 body {
   @apply font-sans bg-gray-100 text-gray-800;
 }
+
+.calendario-grande {
+  width: 340px !important;
+  font-size: 15px !important;
+}
+
+.calendario-grande .react-datepicker__month-container {
+  width: 340px !important;
+}
+
+.calendario-grande .react-datepicker__header {
+  padding-top: 14px !important;
+}
+
+.calendario-grande .react-datepicker__current-month {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  padding-bottom: 8px !important;
+}
+
+.calendario-grande .react-datepicker__day-name,
+.calendario-grande .react-datepicker__day {
+  width: 2.4rem !important;
+  line-height: 2.4rem !important;
+  margin: 0.1rem !important;
+}
+
+.calendario-grande .react-datepicker__navigation {
+  top: 14px !important;
+}

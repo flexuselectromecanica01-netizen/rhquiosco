@@ -1,8 +1,14 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { useState,useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import DatePicker, { registerLocale } from "react-datepicker";
+import { es } from "date-fns/locale/es";
+import "react-datepicker/dist/react-datepicker.css";
+import { formatearFecha } from "@/src/utils/formatearFecha";
+
+registerLocale("es", es);
 
 export default function Vacaciones() {
   const { usuario } = useAuth();
@@ -16,133 +22,142 @@ export default function Vacaciones() {
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
 
-  const convertirFechaLocal = (fecha: string) => {
-  const [year, month, day] = fecha.split("-").map(Number);
-  return new Date(year, month - 1, day);
-};
-const formatearFechaInput = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-const obtenerFechaLimiteVacaciones = () => {
-  const fechaIngreso = usuario?.empleado?.fechaingreso;
-
-  if (!fechaIngreso) return "";
-
-  const hoy = new Date();
-  const ingreso = convertirFechaLocal(fechaIngreso);
-
-  const yearActual = hoy.getFullYear();
-  const monthIngreso = ingreso.getMonth();
-  const dayIngreso = ingreso.getDate();
-
-  const fechaLimite = new Date(yearActual, monthIngreso, dayIngreso);
-
-  return formatearFechaInput(fechaLimite);
-};
-
-const contarDiasHabiles = (inicio: string, termino: string) => {
-  let contador = 0;
-
-  const fechaActual = convertirFechaLocal(inicio);
-  const fechaFinal = convertirFechaLocal(termino);
-
-  while (fechaActual <= fechaFinal) {
-    const fechaTexto = formatearFechaInput(fechaActual);
-
-    if (!esFinDeSemana(fechaTexto) && !esDiaFestivo(fechaTexto)) {
-      contador++;
-    }
-
-    fechaActual.setDate(fechaActual.getDate() + 1);
-  }
-
-  return contador;
-};
-
-  const obtenerFechaHoy=()=>{
-    const hoy = new Date()
-    const year = hoy.getFullYear()
-    const month = String(hoy.getMonth() + 1).padStart(2, "0");
-  const day = String(hoy.getDate()).padStart(2, "0");
-   return `${year}-${month}-${day}`;
-  }
-
   const diasFestivos = [
-  "2026-01-01",
-  "2026-02-02",
-  "2026-03-16",
-  "2026-05-01",
-  "2026-09-16",
-  "2026-11-16",
-  "2026-12-25",
-];
+    "2026-01-01",
+    "2026-02-02",
+    "2026-03-16",
+    "2026-05-01",
+    "2026-09-16",
+    "2026-11-16",
+    "2026-12-25",
+  ];
 
-const esFinDeSemana = (fecha: string) => {
-  const [year, month, day] = fecha.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  const dia = date.getDay();
+  const convertirFechaLocal = (fecha: string) => {
+    const [year, month, day] = fecha.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
 
-  return dia === 0 || dia === 6;
-};
+  const formatearFechaInput = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
 
-const esDiaFestivo = (fecha: string) => {
-  return diasFestivos.includes(fecha);
-};
+    return `${year}-${month}-${day}`;
+  };
 
-const validarFecha = (fecha: string) => {
-  const hoy = obtenerFechaHoy();
-  const fechaLimite = obtenerFechaLimiteVacaciones();
+  const obtenerFechaHoy = () => {
+    return formatearFechaInput(new Date());
+  };
 
-  if (!fecha) {
-    return "Debes seleccionar una fecha.";
-  }
+  const obtenerFechaLimiteVacaciones = () => {
+    const fechaIngreso = usuario?.empleado?.fechaingreso;
 
-  if (fecha < hoy) {
-    return "No puedes seleccionar fechas pasadas.";
-  }
+    if (!fechaIngreso) return "";
 
-  if (fechaLimite && fecha > fechaLimite) {
-    return `Solo puedes tomar vacaciones hasta el ${fechaLimite}.`;
-  }
+    const hoy = new Date();
+    const ingreso = convertirFechaLocal(fechaIngreso);
 
-  if (esFinDeSemana(fecha)) {
-    return "No puedes seleccionar sábados ni domingos.";
-  }
+    const yearActual = hoy.getFullYear();
+    const monthIngreso = ingreso.getMonth();
+    const dayIngreso = ingreso.getDate();
 
-  if (esDiaFestivo(fecha)) {
-    return "No puedes seleccionar días festivos.";
-  }
+    const fechaLimite = new Date(yearActual, monthIngreso, dayIngreso);
 
-  return null;
-};
+    return formatearFechaInput(fechaLimite);
+  };
 
-  useEffect(()=>{
+  const esFinDeSemana = (fecha: string) => {
+    const date = convertirFechaLocal(fecha);
+    const dia = date.getDay();
+
+    return dia === 0 || dia === 6;
+  };
+
+  const esDiaFestivo = (fecha: string) => {
+    return diasFestivos.includes(fecha);
+  };
+
+  const filtrarFechaPermitida = (date: Date) => {
+    const fechaTexto = formatearFechaInput(date);
+    const dia = date.getDay();
+
+    const esSabadoODomingo = dia === 0 || dia === 6;
+    const esFestivo = diasFestivos.includes(fechaTexto);
+
+    return !esSabadoODomingo && !esFestivo;
+  };
+
+  const contarDiasHabiles = (inicio: string, termino: string) => {
+    let contador = 0;
+
+    const fechaActual = convertirFechaLocal(inicio);
+    const fechaFinal = convertirFechaLocal(termino);
+
+    while (fechaActual <= fechaFinal) {
+      const fechaTexto = formatearFechaInput(fechaActual);
+
+      if (!esFinDeSemana(fechaTexto) && !esDiaFestivo(fechaTexto)) {
+        contador++;
+      }
+
+      fechaActual.setDate(fechaActual.getDate() + 1);
+    }
+
+    return contador;
+  };
+
+  const validarFecha = (fecha: string) => {
+    const hoy = obtenerFechaHoy();
+    const fechaLimite = obtenerFechaLimiteVacaciones();
+
+    if (!fecha) {
+      return "Debes seleccionar una fecha.";
+    }
+
+    if (fecha < hoy) {
+      return "No puedes seleccionar fechas pasadas.";
+    }
+
+    if (fechaLimite && fecha > fechaLimite) {
+      return `Solo puedes tomar vacaciones hasta el ${fechaLimite}.`;
+    }
+
+    if (esFinDeSemana(fecha)) {
+      return "No puedes seleccionar sábados ni domingos.";
+    }
+
+    if (esDiaFestivo(fecha)) {
+      return "No puedes seleccionar días festivos.";
+    }
+
+    return null;
+  };
+
+  useEffect(() => {
     const hayModalAbierto = modalAbierto || modalPeriodoAbierto;
-    if(hayModalAbierto){
-      document.body.style.overflow="hidden"
-    }else{
-      document.body.style.overflow=""
+
+    if (hayModalAbierto) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
     }
-    return()=>{
-      document.body.style.overflow=""
-    }
-  },[modalAbierto,modalPeriodoAbierto])
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [modalAbierto, modalPeriodoAbierto]);
 
   const abrirModalPeriodo = async () => {
     const token = localStorage.getItem("token");
     const idempleado = usuario?.empleado?.idempleado;
 
     if (!token) {
-      alert("Sesión expirada. Inicia sesión nuevamente.");
+      toast.error("Sesión expirada. Inicia sesión nuevamente.");
       return;
     }
 
     if (!idempleado) {
-      alert("No se encontró el número de empleado.");
+      toast.warning("No se encontró el número de empleado.");
       return;
     }
 
@@ -165,89 +180,98 @@ const validarFecha = (fecha: string) => {
       console.log("Respuesta solicitudes:", data);
 
       if (!res.ok) {
-        alert(data.message || "Error al consultar las solicitudes");
+        toast.error(data.message || "Error al consultar las solicitudes");
         return;
       }
 
       setSolicitudes(data);
     } catch (error) {
       console.log(error);
-      alert("No se pudo conectar con el servidor");
+      toast.error("No se pudo conectar con el servidor");
     } finally {
       setCargandoSolicitudes(false);
     }
   };
 
   const enviarSolicitud = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  const diasDerecho = Number(usuario?.empleado?.diasderecho ?? 0);
-const diasSolicitados = contarDiasHabiles(fechaInicio, fechaTermino);
+    e.preventDefault();
 
-if (diasSolicitados > diasDerecho) {
-  toast.error(
-    `Solo tienes derecho a ${diasDerecho} días. Estás solicitando ${diasSolicitados} días hábiles.`
-  );
-  return;
-}
+    const errorFechaInicio = validarFecha(fechaInicio);
+    const errorFechaTermino = validarFecha(fechaTermino);
 
-  const errorFechaInicio = validarFecha(fechaInicio);
-  const errorFechaTermino = validarFecha(fechaTermino);
-
-  if (errorFechaInicio) {
-    toast.error(`Fecha inicio: ${errorFechaInicio}`);
-    return;
-  }
-
-  if (errorFechaTermino) {
-    toast.error(`Fecha término: ${errorFechaTermino}`);
-    return;
-  }
-
-  if (fechaTermino < fechaInicio) {
-    toast.error("La fecha término no puede ser menor que la fecha inicio.");
-    return;
-  }
-
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    toast.error("Sesión expirada. Inicia sesión nuevamente.");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/solicitudes`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          fechainicio: fechaInicio,
-          fechatermino: fechaTermino,
-        }),
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.message || "Error al enviar solicitud");
+    if (errorFechaInicio) {
+      toast.error(`Fecha inicio: ${errorFechaInicio}`);
       return;
     }
 
-    toast.success("Solicitud enviada correctamente");
+    if (errorFechaTermino) {
+      toast.error(`Fecha término: ${errorFechaTermino}`);
+      return;
+    }
 
-    setModalAbierto(false);
-    setFechaInicio("");
-    setFechaTermino("");
-  } catch (error) {
-    console.error(error);
-    toast.error("No se pudo conectar con el servidor");
-  }
-};
+    if (fechaTermino < fechaInicio) {
+      toast.error("La fecha término no puede ser menor que la fecha inicio.");
+      return;
+    }
+
+    const diasDerecho = Number(usuario?.empleado?.diasderecho ?? 0);
+    const diasSolicitados = contarDiasHabiles(fechaInicio, fechaTermino);
+
+    if (diasSolicitados > diasDerecho) {
+      toast.error(
+        `Solo tienes derecho a ${diasDerecho} días. Estás solicitando ${diasSolicitados} días hábiles.`
+      );
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      toast.error("Sesión expirada. Inicia sesión nuevamente.");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/solicitudes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            fechainicio: fechaInicio,
+            fechatermino: fechaTermino,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || "Error al enviar solicitud");
+        return;
+      }
+
+      toast.success("Solicitud enviada correctamente");
+
+      setModalAbierto(false);
+      setFechaInicio("");
+      setFechaTermino("");
+    } catch (error) {
+      console.error(error);
+      toast.error("No se pudo conectar con el servidor");
+    }
+  };
+
+  const fechaLimiteVacaciones = obtenerFechaLimiteVacaciones();
+  const diasDerecho = Number(usuario?.empleado?.diasderecho ?? 0);
+  const diasSeleccionados =
+    fechaInicio && fechaTermino
+      ? contarDiasHabiles(fechaInicio, fechaTermino)
+      : 0;
+
   return (
     <section className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-6xl">
@@ -330,7 +354,7 @@ if (diasSolicitados > diasDerecho) {
             <button
               type="button"
               onClick={() => setModalAbierto(true)}
-              className="w-full rounded-xl cursor-pointer bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 sm:w-auto sm:px-8 sm:text-lg"
+              className="w-full cursor-pointer rounded-xl bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 sm:w-auto sm:px-8 sm:text-lg"
             >
               Solicitud de Vacaciones
             </button>
@@ -340,11 +364,15 @@ if (diasSolicitados > diasDerecho) {
 
       {/* Modal para crear solicitud */}
       {modalAbierto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 sm:px-6">
-          <div className="relative max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-5 shadow-lg sm:p-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm sm:px-6">
+          <div className="relative max-h-[90vh] w-full max-w-lg overflow-visible rounded-2xl bg-white p-5 shadow-lg sm:p-8">
             <button
               type="button"
-              onClick={() => setModalAbierto(false)}
+              onClick={() => {
+                setModalAbierto(false);
+                setFechaInicio("");
+                setFechaTermino("");
+              }}
               className="absolute right-4 top-4 cursor-pointer text-2xl leading-none text-gray-400 hover:text-gray-700"
             >
               ×
@@ -354,9 +382,30 @@ if (diasSolicitados > diasDerecho) {
               Solicitud de Vacaciones
             </h2>
 
-            <p className="mb-6 mt-2 text-sm text-gray-600 sm:text-base">
+            <p className="mb-4 mt-2 text-sm text-gray-600 sm:text-base">
               Selecciona el periodo de tus vacaciones.
             </p>
+
+            <div className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
+              <p>
+                Días disponibles:{" "}
+                <span className="font-bold">{diasDerecho}</span>
+              </p>
+
+              <p>
+                Fecha límite para tomar vacaciones:{" "}
+                <span className="font-bold">
+                  {formatearFecha(fechaLimiteVacaciones) || "Sin información"}
+                </span>
+              </p>
+
+              {diasSeleccionados > 0 && (
+                <p>
+                  Días hábiles seleccionados:{" "}
+                  <span className="font-bold">{diasSeleccionados}</span>
+                </p>
+              )}
+            </div>
 
             <form onSubmit={enviarSolicitud} className="space-y-5">
               <div>
@@ -364,27 +413,33 @@ if (diasSolicitados > diasDerecho) {
                   Fecha inicio
                 </label>
 
-                <input
-                  type="date"
-                  value={fechaInicio}
-                    min={obtenerFechaHoy()}
-                    max={obtenerFechaLimiteVacaciones()}
-  onChange={(e) => {
-    const fecha = e.target.value;
-    const error = validarFecha(fecha);
+                <div className="w-full [&_.react-datepicker-wrapper]:w-full [&_.react-datepicker__input-container]:w-full">
+                  <DatePicker
+                    selected={
+                      fechaInicio ? convertirFechaLocal(fechaInicio) : null
+                    }
+                    onChange={(date: Date | null) => {
+                      if (!date) return;
 
-    if (error) {
-      toast.error(error);
-      setFechaInicio("");
-      return;
-    }
-
-    setFechaInicio(fecha);
-  }}
-
-                  required
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                      setFechaInicio(formatearFechaInput(date));
+                      setFechaTermino("");
+                    }}
+                    minDate={convertirFechaLocal(obtenerFechaHoy())}
+                    maxDate={
+                      fechaLimiteVacaciones
+                        ? convertirFechaLocal(fechaLimiteVacaciones)
+                        : undefined
+                    }
+                    filterDate={filtrarFechaPermitida}
+                    locale="es"
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="Selecciona fecha inicio"
+                    calendarClassName="calendario-grande"
+                    popperPlacement="bottom-start"
+                    popperClassName="z-[9999]"
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
               </div>
 
               <div>
@@ -392,46 +447,74 @@ if (diasSolicitados > diasDerecho) {
                   Fecha término
                 </label>
 
-                <input
-                  type="date"
-                  value={fechaTermino}
-                  min={fechaInicio || obtenerFechaHoy()}
-                  max={obtenerFechaLimiteVacaciones()}
-  onChange={(e) => {
-    const fecha = e.target.value;
-    const error = validarFecha(fecha);
+                <div className="w-full [&_.react-datepicker-wrapper]:w-full [&_.react-datepicker__input-container]:w-full">
+                  <DatePicker
+                    selected={
+                      fechaTermino ? convertirFechaLocal(fechaTermino) : null
+                    }
+                    onChange={(date: Date | null) => {
+                      if (!date) return;
 
-    if (error) {
-      toast.error(error);
-      setFechaTermino("");
-      return;
-    }
+                      const fecha = formatearFechaInput(date);
 
-    if (fechaInicio && fecha < fechaInicio) {
-      toast.error("La fecha término no puede ser menor que la fecha inicio.");
-      setFechaTermino("");
-      return;
-    }
+                      if (fechaInicio && fecha < fechaInicio) {
+                        toast.error(
+                          "La fecha término no puede ser menor que la fecha inicio."
+                        );
+                        return;
+                      }
 
-    setFechaTermino(fecha);
-  }}
-                  required
-                  className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                      const diasSolicitados = contarDiasHabiles(
+                        fechaInicio,
+                        fecha
+                      );
+
+                      if (diasSolicitados > diasDerecho) {
+                        toast.error(
+                          `Solo tienes derecho a ${diasDerecho} días. Ese rango tiene ${diasSolicitados} días hábiles.`
+                        );
+                        return;
+                      }
+
+                      setFechaTermino(fecha);
+                    }}
+                    minDate={convertirFechaLocal(
+                      fechaInicio || obtenerFechaHoy()
+                    )}
+                    maxDate={
+                      fechaLimiteVacaciones
+                        ? convertirFechaLocal(fechaLimiteVacaciones)
+                        : undefined
+                    }
+                    filterDate={filtrarFechaPermitida}
+                    locale="es"
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="Selecciona fecha término"
+                    calendarClassName="calendario-grande"
+  popperPlacement="bottom-start"
+                    popperClassName="z-[9999]"
+                    disabled={!fechaInicio}
+                    className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100"
+                  />
+                </div>
               </div>
 
               <div className="flex flex-col-reverse gap-3 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setModalAbierto(false)}
-                  className="w-full rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 sm:w-auto cursor-pointer"
+                  onClick={() => {
+                    setModalAbierto(false);
+                    setFechaInicio("");
+                    setFechaTermino("");
+                  }}
+                  className="w-full cursor-pointer rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 sm:w-auto"
                 >
                   Cancelar
                 </button>
 
                 <button
                   type="submit"
-                  className="w-full rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95 sm:w-auto cursor-pointer"
+                  className="w-full cursor-pointer rounded-xl bg-emerald-600 px-6 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95 sm:w-auto"
                 >
                   Enviar
                 </button>
@@ -443,7 +526,7 @@ if (diasSolicitados > diasDerecho) {
 
       {/* Modal solicitudes del empleado */}
       {modalPeriodoAbierto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 sm:px-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm sm:px-6">
           <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-lg sm:p-8">
             <button
               type="button"
@@ -533,7 +616,7 @@ if (diasSolicitados > diasDerecho) {
               <button
                 type="button"
                 onClick={() => setModalPeriodoAbierto(false)}
-                className="rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95 cursor-pointer"
+                className="cursor-pointer rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
               >
                 Cerrar
               </button>
