@@ -205,7 +205,7 @@ export default function DetalleVacaciones() {
             <div>
               <p className="text-sm text-gray-500">Fecha de ingreso</p>
               <p className="font-semibold text-gray-800">
-                {empleado.fechaingreso}
+                {formatearFecha(empleado.fechaingreso)}
               </p>
             </div>
 
