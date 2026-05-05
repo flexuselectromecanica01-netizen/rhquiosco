@@ -322,7 +322,7 @@ export default function Vacaciones() {
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Fecha de ingreso</p>
                 <p className="text-xl font-semibold text-gray-800">
-                  {usuario?.empleado?.fechaingreso ?? "Sin información"}
+                  {formatearFecha(usuario?.empleado?.fechaingreso!) ?? "Sin información"}
                 </p>
               </div>
 
