@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
+import { formatearFecha } from "@/src/utils/formatearFecha";
 
 
 export default function DetalleVacaciones() {
@@ -147,14 +148,14 @@ export default function DetalleVacaciones() {
             <div>
               <p className="text-sm text-gray-500">Fecha inicio</p>
               <p className="font-semibold text-gray-800">
-                {solicitud.fechainicio}
+                {formatearFecha(solicitud.fechainicio)}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Fecha término</p>
               <p className="font-semibold text-gray-800">
-                {solicitud.fechatermino}
+                {formatearFecha(solicitud.fechatermino)}
               </p>
             </div>
 

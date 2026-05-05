@@ -68,7 +68,7 @@ export default function Header() {
               <button
                 type="button"
                 onClick={cerrarSesion}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition text-left"
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition text-left cursor-pointer"
               >
                 <LogOut size={18} />
                 Cerrar sesión

@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
+import { formatearFecha } from "@/src/utils/formatearFecha";
 import { Check, X, User, CalendarDays } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
@@ -34,6 +35,8 @@ export default function AutorizacionVacaciones() {
       );
 
       const data: EmpleadoVacaciones[] = await res.json();
+        console.log(data)
+
 
       if (!res.ok) {
         console.error(data);
@@ -70,13 +73,6 @@ export default function AutorizacionVacaciones() {
     obtenerSolicitudesPorArea();
   }, [obtenerSolicitudesPorArea]);
 
-  const formatearFecha = (fecha: string) => {
-  return new Date(fecha).toLocaleDateString("es-MX", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-};
 
   const aprobarSolicitud = async (id: number) => {
     if (!token) {
@@ -146,6 +142,7 @@ export default function AutorizacionVacaciones() {
 
       const data = await res.json();
 
+
       if (!res.ok) {
         alert(data.message || "Error al rechazar solicitud");
         return;
@@ -176,6 +173,7 @@ export default function AutorizacionVacaciones() {
         return "bg-yellow-100 text-yellow-700";
     }
   };
+
 
   return (
     <main className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-10">
@@ -283,7 +281,7 @@ export default function AutorizacionVacaciones() {
                         <div className="flex items-center gap-2">
                           <CalendarDays size={18} className="text-[#009b63]" />
                           <span>
-                            {solicitud.fechaInicio} al {solicitud.fechaFin}
+                            {formatearFecha(solicitud.fechaInicio)} al {formatearFecha(solicitud.fechaFin)}
                           </span>
                         </div>
                       </td>

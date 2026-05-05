@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
+import { formatearFecha } from "@/src/utils/formatearFecha";
 
 
 
@@ -54,13 +55,7 @@ export default function Vacaciones() {
       nombre: empleado.nombre,
     }))
   );
-  const formatearFecha = (fecha: string) => {
-  return new Date(fecha).toLocaleDateString("es-MX", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-};
+
 
   return (
     <main className="bg-gray-100 px-6 py-10">
@@ -137,11 +132,11 @@ export default function Vacaciones() {
 </td>
 
                     <td className="px-6 py-5 text-gray-700">
-                      {solicitud.fechainicio}
+                      {formatearFecha(solicitud.fechainicio)}
                     </td>
 
                     <td className="px-6 py-5 text-gray-700">
-                      {solicitud.fechatermino}
+                      {formatearFecha(solicitud.fechatermino)}
                     </td>
 
                     <td className="px-6 py-5 text-gray-700">

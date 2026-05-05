@@ -197,7 +197,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full rounded-md bg-[#009b63] py-3 text-base font-bold text-white transition hover:bg-[#008554] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
+              className="w-full rounded-md bg-[#009b63] cursor-pointer py-3 text-base font-bold text-white transition hover:bg-[#008554] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 sm:text-base"
             >
               {isSubmitting ? "Ingresando..." : "Ingresar"}
             </button>
