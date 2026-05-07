@@ -46,3 +46,28 @@ export function createLoginSubmit({router,login}:LoginSubmitParams):SubmitHandle
         }
     }
 }
+
+
+export async function updatePasswordRequest(token:string,password:string) {
+     const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/login/update-password`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        password,
+      }),
+    }
+  );
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Error al actualizar contraseña");
+  }
+
+  return data;
+}

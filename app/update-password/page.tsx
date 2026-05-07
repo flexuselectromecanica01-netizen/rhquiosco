@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import { useUpdatePasswordSubmit } from "@/src/hooks/useUpdatePasswordSubmit";
 
 type UpdatePasswordForm = {
   password: string;
@@ -13,8 +14,7 @@ type UpdatePasswordForm = {
 };
 
 export default function Updatepassword() {
-  const { token, cargarUsuario } = useAuth();
-  const router = useRouter();
+  const{onSubmit} = useUpdatePasswordSubmit()
 
   const {
     register,
@@ -24,41 +24,6 @@ export default function Updatepassword() {
   } = useForm<UpdatePasswordForm>();
 
   const password = watch("password");
-
-  const onSubmit: SubmitHandler<UpdatePasswordForm> = async (data) => {
-    if (!token) {
-      toast.error("Sesión expirada. Inicia sesión nuevamente.");
-      router.replace("/login");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login/update-password`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          password: data.password,
-        }),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error(result.message || "Error al actualizar contraseña");
-        return;
-      }
-
-      await cargarUsuario(token);
-
-      toast.success("Contraseña actualizada correctamente");
-      router.replace("/");
-    } catch (error) {
-      toast.error("No se pudo conectar con el servidor");
-    }
-  };
 
   return (
   <main className="min-h-screen bg-[#1f252b]">

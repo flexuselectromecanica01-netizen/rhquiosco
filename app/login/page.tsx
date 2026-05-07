@@ -13,16 +13,9 @@ export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginForm>();
+  const {register,handleSubmit,formState: { errors, isSubmitting },} = useForm<LoginForm>();
 
-  const onSubmit = createLoginSubmit({
-    router,
-    login,
-  });
+  const onSubmit = createLoginSubmit({router,login});
 
   
 
