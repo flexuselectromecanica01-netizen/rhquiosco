@@ -3,14 +3,11 @@
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Lock, User } from "lucide-react";
 import Image from "next/image";
-import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
+import { createLoginSubmit } from "@/src/lib/login";
+import { LoginForm } from "@/src/types/solicitudes";
 
-type LoginForm = {
-  idempleado: string;
-  password: string;
-};
 
 export default function Login() {
   const router = useRouter();
@@ -22,39 +19,12 @@ export default function Login() {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>();
 
-  const onSubmit: SubmitHandler<LoginForm> = async (data) => {
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          idempleado: data.idempleado,
-          password: data.password,
-        }),
-      });
+  const onSubmit = createLoginSubmit({
+    router,
+    login,
+  });
 
-      const response = await res.json();
-
-      if (!res.ok) {
-        toast.error(response.message || "Credenciales incorrectas");
-        return;
-      }
-
-      await login(response.token);
-
-      toast.success("Inicio de sesión correcto");
-
-      if (response.usuario?.actualizarpassword) {
-        router.push("/actualizar-password");
-      } else {
-        router.push("/");
-      }
-    } catch (error) {
-      toast.error("No se pudo conectar con el servidor");
-    }
-  };
+  
 
   return (
     <main className="min-h-screen bg-[#1f252b]">

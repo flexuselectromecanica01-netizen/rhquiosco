@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Plus, Pencil, Trash2, Upload } from "lucide-react";
+import { Usuario } from "@/src/types/solicitudes";
 
 
 export default function Usuarios() {

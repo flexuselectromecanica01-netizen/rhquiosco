@@ -1,4 +1,4 @@
-type SolicitudDetalle = {
+export type SolicitudDetalle = {
   id: number;
   fechainicio: string;
   fechatermino: string;
@@ -23,7 +23,7 @@ type SolicitudDetalle = {
 };
 
 
-type Solicitud = {
+export type Solicitud = {
   id: number;
   fechainicio: string;
   fechatermino: string;
@@ -33,7 +33,7 @@ type Solicitud = {
    fechacreacion: string;
 };
 
-type EmpleadoVacaciones = {
+export type EmpleadoVacaciones = {
   id: number;
   idempleado: string;
   nombre: string;
@@ -57,7 +57,7 @@ type EmpleadoVacaciones = {
 
 
 
-type SolicitudTabla = {
+export type SolicitudTabla = {
   id: number;
   empleado: string;
   idempleado: string;
@@ -73,10 +73,16 @@ type SolicitudTabla = {
 
 
 
-type Usuario = {
+export type Usuario = {
   id: number;
   nombre: string;
   correo: string;
   puesto: string;
   departamento: string;
+};
+
+
+export type LoginForm = {
+  idempleado: string;
+  password: string;
 };

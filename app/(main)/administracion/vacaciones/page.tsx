@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatearFecha } from "@/src/utils/formatearFecha";
+import { EmpleadoVacaciones } from "@/src/types/solicitudes";
 
 
 

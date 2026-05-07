@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { formatearFecha } from "@/src/utils/formatearFecha";
+import { SolicitudDetalle } from "@/src/types/solicitudes";
 
 
 export default function DetalleVacaciones() {

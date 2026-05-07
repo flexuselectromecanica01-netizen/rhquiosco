@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
+import { EmpleadoVacaciones, SolicitudTabla } from "@/src/types/solicitudes";
 import { formatearFecha } from "@/src/utils/formatearFecha";
 import { Check, X, User, CalendarDays } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
