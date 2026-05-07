@@ -3,9 +3,6 @@
 import { useForm, SubmitHandler } from "react-hook-form";
 import { Lock, CheckCircle } from "lucide-react";
 import Image from "next/image";
-import { useAuth } from "../context/AuthContext";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 import { useUpdatePasswordSubmit } from "@/src/hooks/useUpdatePasswordSubmit";
 
 type UpdatePasswordForm = {

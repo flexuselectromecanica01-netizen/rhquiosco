@@ -1,81 +1,145 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Plus, Pencil, Trash2, Upload } from "lucide-react";
-import { Usuario } from "@/src/types/solicitudes";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Upload,
+  Save,
+  RefreshCw,
+} from "lucide-react";
+import { toast } from "react-toastify";
+import { useAuth } from "@/app/context/AuthContext";
+import { VacacioneImport } from "@/src/types/vacaciones";
+import { formatearFecha } from "@/src/utils/formatearFecha";
 
+const formularioInicial: Omit<VacacioneImport, "id"> = {
+  idempleado: "",
+  nombre: "",
+  tipoempleado: "",
+  area: "",
+  puesto: "",
+  fechaingreso: "",
+  antiguedad: 0,
+  diasderecho: 0,
+  iniciocicloactual: "",
+  fincicloactual: "",
+  proporcionaldevengado: "0.00",
+  diastomados: 0,
+  saldodisponible: "0.00",
+  diasporvencer: 0,
+  diasavencer: 0,
+  semaforo: "",
+  accionsugerida: "",
+};
 
-export default function Usuarios() {
+export default function ImportarVacacionesPage() {
   const inputExcelRef = useRef<HTMLInputElement | null>(null);
+  const { token } = useAuth();
 
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const[pagina,setPagina] = useState(1)
+  const[limite, setLimite] = useState(10)
+  const[totalPaginas,setTotalPaginas] = useState(1)
+  const[totalRegistros,setTotalRegistros] = useState(0)
+
+  const [empleados, setEmpleados] = useState<VacacioneImport[]>([]);
   const [editandoId, setEditandoId] = useState<number | null>(null);
+  const [cargando, setCargando] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
-  const [formulario, setFormulario] = useState({
-    nombre: "",
-    correo: "",
-    puesto: "",
-    departamento: "",
-  });
+  const [formulario, setFormulario] =
+    useState<Omit<VacacioneImport, "id">>(formularioInicial);
+
+  const headersJson = () => {
+    const headers: HeadersInit = {
+      "Content-Type": "application/json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    return headers;
+  };
 
   const limpiarFormulario = () => {
-    setFormulario({
-      nombre: "",
-      correo: "",
-      puesto: "",
-      departamento: "",
-    });
+    setFormulario(formularioInicial);
     setEditandoId(null);
   };
 
-  const guardarUsuario = () => {
-    if (!formulario.nombre || !formulario.correo) {
-      alert("Nombre y correo son obligatorios");
+  const obtenerEmpleados = async (page = pagina, limit = limite) => {
+  try {
+    setCargando(true);
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/paginado?page=${page}&limit=${limit}`,
+      {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
+      }
+    );
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      toast.error(result.message || "Error al obtener empleados");
       return;
     }
 
-    if (editandoId !== null) {
-      setUsuarios((prev) =>
-        prev.map((usuario) =>
-          usuario.id === editandoId
-            ? {
-                ...usuario,
-                ...formulario,
-              }
-            : usuario
-        )
-      );
+    setEmpleados(result.data);
+    setPagina(result.meta.page);
+    setLimite(result.meta.limit);
+    setTotalPaginas(result.meta.totalPages);
+    setTotalRegistros(result.meta.total);
+  } catch (error) {
+    toast.error("No se pudo conectar con el servidor");
+  } finally {
+    setCargando(false);
+  }
+};
+  useEffect(() => {
+  obtenerEmpleados(1, limite);
+}, []);
 
-      limpiarFormulario();
-      return;
+  const formatearFechaExcel = (valor: unknown): string => {
+    if (!valor) return "";
+
+    if (valor instanceof Date) {
+      return valor.toISOString().split("T")[0];
     }
 
-    const nuevoUsuario: Usuario = {
-      id: Date.now(),
-      ...formulario,
-    };
+    if (typeof valor === "number") {
+      const fecha = XLSX.SSF.parse_date_code(valor);
 
-    setUsuarios((prev) => [...prev, nuevoUsuario]);
-    limpiarFormulario();
+      if (!fecha) return "";
+
+      const year = fecha.y;
+      const month = String(fecha.m).padStart(2, "0");
+      const day = String(fecha.d).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    }
+
+    return String(valor).trim();
   };
 
-  const editarUsuario = (usuario: Usuario) => {
-    setEditandoId(usuario.id);
-    setFormulario({
-      nombre: usuario.nombre,
-      correo: usuario.correo,
-      puesto: usuario.puesto,
-      departamento: usuario.departamento,
-    });
-  };
+  const obtenerValor = (
+    fila: Record<string, any>,
+    claves: string[],
+    valorDefault: any = ""
+  ) => {
+    for (const clave of claves) {
+      if (fila[clave] !== undefined && fila[clave] !== null) {
+        return fila[clave];
+      }
+    }
 
-  const eliminarUsuario = (id: number) => {
-    const confirmar = confirm("¿Seguro que deseas eliminar este usuario?");
-
-    if (!confirmar) return;
-
-    setUsuarios((prev) => prev.filter((usuario) => usuario.id !== id));
+    return valorDefault;
   };
 
   const importarExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,230 +151,613 @@ export default function Usuarios() {
 
     reader.onload = (e) => {
       const data = e.target?.result;
-      const workbook = XLSX.read(data, { type: "binary" });
 
-      const hojaNombre = workbook.SheetNames[0];
+      const workbook = XLSX.read(data, {
+        type: "binary",
+        cellDates: true,
+      });
+
+      const hojaNombre = workbook.SheetNames.includes("Vacaciones")
+        ? "Vacaciones"
+        : workbook.SheetNames[0];
+
       const hoja = workbook.Sheets[hojaNombre];
 
-      const datos = XLSX.utils.sheet_to_json<Record<string, any>>(hoja);
+      const datos = XLSX.utils.sheet_to_json<Record<string, any>>(hoja, {
+        defval: "",
+      });
 
-      const usuariosImportados: Usuario[] = datos.map((fila, index) => ({
-        id: Date.now() + index,
-        nombre: fila.nombre || fila.Nombre || "",
-        correo: fila.correo || fila.Correo || "",
-        puesto: fila.puesto || fila.Puesto || "",
-        departamento: fila.departamento || fila.Departamento || "",
-      }));
+      const empleadosImportados: VacacioneImport[] = datos.map(
+        (fila, index) => {
+          const idempleado = String(
+            obtenerValor(fila, ["idempleado", "ID empleado", "IdEmpleado"], "")
+          )
+            .trim()
+            .padStart(4, "0");
 
-      setUsuarios((prev) => [...prev, ...usuariosImportados]);
+          return {
+            id: Date.now() + index,
+            idempleado,
+            nombre: String(obtenerValor(fila, ["nombre", "Nombre"], "")).trim(),
+            tipoempleado: String(
+              obtenerValor(fila, ["tipoempleado", "Tipo empleado"], "")
+            ).trim() as VacacioneImport["tipoempleado"],
+            area: String(
+              obtenerValor(fila, ["area", "Área", "Area"], "")
+            ).trim(),
+            puesto: String(obtenerValor(fila, ["puesto", "Puesto"], "")).trim(),
+            fechaingreso: formatearFechaExcel(
+              obtenerValor(fila, ["fechaingreso", "Fecha ingreso"], "")
+            ),
+            antiguedad: Number(
+              obtenerValor(fila, ["antiguedad", "Antiguedad", "Antigüedad"], 0)
+            ),
+            diasderecho: Number(
+              obtenerValor(fila, ["diasderecho", "Días derecho"], 0)
+            ),
+            iniciocicloactual: formatearFechaExcel(
+              obtenerValor(
+                fila,
+                ["iniciocicloactual", "Inicio ciclo actual"],
+                ""
+              )
+            ),
+            fincicloactual: formatearFechaExcel(
+              obtenerValor(fila, ["fincicloactual", "Fin ciclo actual"], "")
+            ),
+            proporcionaldevengado: String(
+              obtenerValor(
+                fila,
+                ["proporcionaldevengado", "Proporcional devengado"],
+                "0.00"
+              )
+            ),
+            diastomados: Number(
+              obtenerValor(fila, ["diastomados", "Días tomados"], 0)
+            ),
+            saldodisponible: String(
+              obtenerValor(
+                fila,
+                ["saldodisponible", "Saldo disponible"],
+                "0.00"
+              )
+            ),
+            diasporvencer: Number(
+              obtenerValor(fila, ["diasporvencer", "Días por vencer"], 0)
+            ),
+            diasavencer: Number(
+              obtenerValor(fila, ["diasavencer", "Días a vencer"], 0)
+            ),
+            semaforo: String(
+              obtenerValor(fila, ["semaforo", "Semaforo", "Semáforo"], "")
+            ).trim() as VacacioneImport["semaforo"],
+            accionsugerida: String(
+              obtenerValor(fila, ["accionsugerida", "Acción sugerida"], "")
+            ).trim(),
+          };
+        }
+      );
+
+      setEmpleados((prev) => [...empleadosImportados, ...prev]);
+      toast.success("Excel cargado correctamente");
     };
 
     reader.readAsBinaryString(archivo);
-
     event.target.value = "";
   };
 
+  const validarFormulario = () => {
+    if (!formulario.idempleado || !formulario.nombre) {
+      toast.error("ID empleado y nombre son obligatorios");
+      return false;
+    }
+
+    if (formulario.idempleado.length !== 4) {
+      toast.error("El ID empleado debe tener 4 dígitos");
+      return false;
+    }
+
+    if (!formulario.tipoempleado) {
+      toast.error("Selecciona el tipo de empleado");
+      return false;
+    }
+
+    if (!formulario.semaforo) {
+      toast.error("Selecciona el semáforo");
+      return false;
+    }
+
+    return true;
+  };
+
+  const guardarEmpleado = async () => {
+    if (!validarFormulario()) return;
+
+    if (editandoId !== null) {
+      const empleadoExistente = empleados.find((e) => e.id === editandoId);
+
+      if (!empleadoExistente) return;
+
+      const esEmpleadoDeBaseDeDatos =
+        empleadoExistente.id && empleadoExistente.id < 1000000000000;
+
+      if (esEmpleadoDeBaseDeDatos) {
+        try {
+          const res = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/${editandoId}`,
+            {
+              method: "PATCH",
+              headers: headersJson(),
+              body: JSON.stringify(formulario),
+            }
+          );
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            toast.error(data.message || "Error al actualizar empleado");
+            return;
+          }
+
+          toast.success("Empleado actualizado correctamente");
+          await obtenerEmpleados();
+          limpiarFormulario();
+          return;
+        } catch (error) {
+          toast.error("No se pudo conectar con el servidor");
+          return;
+        }
+      }
+
+      setEmpleados((prev) =>
+        prev.map((empleado) =>
+          empleado.id === editandoId
+            ? {
+                id: editandoId,
+                ...formulario,
+              }
+            : empleado
+        )
+      );
+
+      toast.success("Registro actualizado localmente");
+      limpiarFormulario();
+      return;
+    }
+
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vacaciones`, {
+        method: "POST",
+        headers: headersJson(),
+        body: JSON.stringify(formulario),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || "Error al crear empleado");
+        return;
+      }
+
+      toast.success("Empleado creado correctamente");
+      await obtenerEmpleados();
+      limpiarFormulario();
+    } catch (error) {
+      toast.error("No se pudo conectar con el servidor");
+    }
+  };
+
+  const editarEmpleado = (empleado: VacacioneImport) => {
+    if (!empleado.id) return;
+
+    setEditandoId(empleado.id);
+
+    const { id, ...datosFormulario } = empleado;
+    setFormulario(datosFormulario);
+  };
+
+  const eliminarEmpleado = async (empleado: VacacioneImport) => {
+    if (!empleado.id) return;
+
+    const confirmar = confirm("¿Seguro que deseas eliminar este registro?");
+
+    if (!confirmar) return;
+
+    const esEmpleadoDeBaseDeDatos = empleado.id < 1000000000000;
+
+    if (!esEmpleadoDeBaseDeDatos) {
+      setEmpleados((prev) => prev.filter((item) => item.id !== empleado.id));
+
+      if (editandoId === empleado.id) {
+        limpiarFormulario();
+      }
+
+      toast.success("Registro eliminado localmente");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/${empleado.id}`,
+        {
+          method: "DELETE",
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined,
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || "Error al eliminar empleado");
+        return;
+      }
+
+      toast.success("Empleado eliminado correctamente");
+      await obtenerEmpleados();
+
+      if (editandoId === empleado.id) {
+        limpiarFormulario();
+      }
+    } catch (error) {
+      toast.error("No se pudo conectar con el servidor");
+    }
+  };
+
+  const guardarImportadosEnBaseDatos = async () => {
+    const importados = empleados.filter(
+      (empleado) => empleado.id && empleado.id >= 1000000000000
+    );
+
+    if (importados.length === 0) {
+      toast.error("No hay registros importados para guardar");
+      return;
+    }
+
+    try {
+      setGuardando(true);
+
+      const payload = importados.map(({ id, ...empleado }) => empleado);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/importar-json`,
+        {
+          method: "POST",
+          headers: headersJson(),
+          body: JSON.stringify({
+            empleados: payload,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || "Error al guardar importados");
+        return;
+      }
+
+      toast.success(
+        `Importación finalizada. Creados: ${data.creados}, omitidos: ${data.omitidos}`
+      );
+
+      await obtenerEmpleados();
+      limpiarFormulario();
+    } catch (error) {
+      toast.error("No se pudo conectar con el servidor");
+    } finally {
+      setGuardando(false);
+    }
+  };
+
   return (
-    <main className=" bg-gray-100 px-6 py-10">
-      <section className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <main className="min-h-screen bg-gray-100 px-4 py-8 sm:px-6 lg:px-8">
+      <section className="mx-auto max-w-7xl">
+        <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">
-              Usuarios
-            </h1>
+            <p className="text-lg font-semibold uppercase tracking-wide text-orange-500">
+              Administración
+            </p>
+
           </div>
 
-          <div>
+          <div className="flex flex-col gap-3 sm:flex-row">
             <input
               ref={inputExcelRef}
               type="file"
-              accept=".xlsx, .xls, .csv"
+              accept=".xlsx,.xls,.csv"
               onChange={importarExcel}
               className="hidden"
             />
 
             <button
               type="button"
+              onClick={()=>obtenerEmpleados()}
+              disabled={cargando}
+              className="flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCw size={20} />
+              {cargando ? "Cargando..." : "Actualizar"}
+            </button>
+
+            <button
+              type="button"
               onClick={() => inputExcelRef.current?.click()}
-              className="flex items-center gap-2 bg-[#009b63] text-white px-5 py-3 rounded-xl hover:bg-[#007f52] transition"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52]"
             >
               <Upload size={20} />
               Importar Excel
             </button>
-            
-          </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* FORMULARIO */}
-          <div className="bg-white rounded-2xl shadow-md p-6 border border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-800 mb-5">
-              {editandoId ? "Editar usuario" : "Nuevo usuario"}
+            <button
+              type="button"
+              disabled={guardando}
+              onClick={guardarImportadosEnBaseDatos}
+              className="flex items-center justify-center gap-2 rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Save size={20} />
+              {guardando ? "Guardando..." : "Guardar importados"}
+            </button>
+          </div>
+        </header>
+
+        <div className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+          <section className="rounded-2xl border border-gray-200 bg-white p-6 shadow-md">
+            <h2 className="mb-5 text-xl font-semibold text-gray-800">
+              {editandoId ? "Editar empleado" : "Nuevo empleado"}
             </h2>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  value={formulario.nombre}
-                  onChange={(e) =>
-                    setFormulario({
-                      ...formulario,
-                      nombre: e.target.value,
-                    })
-                  }
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#009b63]"
-                  placeholder="Ej. Juan Pérez"
-                />
-              </div>
+              <InputTexto
+                label="ID empleado"
+                value={formulario.idempleado}
+                maxLength={4}
+                onChange={(value) =>
+                  setFormulario({
+                    ...formulario,
+                    idempleado: value.replace(/\D/g, ""),
+                  })
+                }
+                placeholder="0293"
+              />
+
+              <InputTexto
+                label="Nombre"
+                value={formulario.nombre}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, nombre: value })
+                }
+                placeholder="Diego Trejo"
+              />
+
+              <SelectTexto
+                label="Tipo empleado"
+                value={formulario.tipoempleado}
+                onChange={(value) =>
+                  setFormulario({
+                    ...formulario,
+                    tipoempleado: value as VacacioneImport["tipoempleado"],
+                  })
+                }
+                opciones={["SEMANAL", "QUINCENAL"]}
+              />
+
+              <InputTexto
+                label="Área"
+                value={formulario.area}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, area: value })
+                }
+                placeholder="Sistemas"
+              />
+
+              <InputTexto
+                label="Puesto"
+                value={formulario.puesto}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, puesto: value })
+                }
+                placeholder="Desarrollador"
+              />
+
+              <InputTexto
+                label="Fecha ingreso"
+                type="date"
+                value={formulario.fechaingreso}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, fechaingreso: value })
+                }
+              />
+
+              <InputNumero
+                label="Antigüedad"
+                value={formulario.antiguedad}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, antiguedad: value })
+                }
+              />
+
+              <InputNumero
+                label="Días derecho"
+                value={formulario.diasderecho}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, diasderecho: value })
+                }
+              />
+
+              <InputTexto
+                label="Inicio ciclo actual"
+                type="date"
+                value={formulario.iniciocicloactual}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, iniciocicloactual: value })
+                }
+              />
+
+              <InputTexto
+                label="Fin ciclo actual"
+                type="date"
+                value={formulario.fincicloactual}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, fincicloactual: value })
+                }
+              />
+
+              <InputTexto
+                label="Proporcional devengado"
+                value={formulario.proporcionaldevengado}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, proporcionaldevengado: value })
+                }
+              />
+
+              <InputNumero
+                label="Días tomados"
+                value={formulario.diastomados}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, diastomados: value })
+                }
+              />
+
+              <InputTexto
+                label="Saldo disponible"
+                value={formulario.saldodisponible}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, saldodisponible: value })
+                }
+              />
+
+              <InputNumero
+                label="Días por vencer"
+                value={formulario.diasporvencer}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, diasporvencer: value })
+                }
+              />
+
+              <InputNumero
+                label="Días a vencer"
+                value={formulario.diasavencer}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, diasavencer: value })
+                }
+              />
+
+              <SelectTexto
+                label="Semáforo"
+                value={formulario.semaforo}
+                onChange={(value) =>
+                  setFormulario({
+                    ...formulario,
+                    semaforo: value as VacacioneImport["semaforo"],
+                  })
+                }
+                opciones={["CONTROLADO", "ATENCION", "SINSALDO"]}
+              />
 
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Correo
+                <label className="mb-1 block text-sm font-medium text-gray-600">
+                  Acción sugerida
                 </label>
-                <input
-                  type="email"
-                  value={formulario.correo}
-                  onChange={(e) =>
-                    setFormulario({
-                      ...formulario,
-                      correo: e.target.value,
-                    })
-                  }
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#009b63]"
-                  placeholder="correo@empresa.com"
-                />
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Puesto
-                </label>
-                <input
-                  type="text"
-                  value={formulario.puesto}
+                <textarea
+                  value={formulario.accionsugerida}
                   onChange={(e) =>
                     setFormulario({
                       ...formulario,
-                      puesto: e.target.value,
+                      accionsugerida: e.target.value,
                     })
                   }
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#009b63]"
-                  placeholder="Ej. Auxiliar RH"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Departamento
-                </label>
-                <input
-                  type="text"
-                  value={formulario.departamento}
-                  onChange={(e) =>
-                    setFormulario({
-                      ...formulario,
-                      departamento: e.target.value,
-                    })
-                  }
-                  className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#009b63]"
-                  placeholder="Ej. Recursos Humanos"
+                  rows={3}
+                  className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#009b63]"
                 />
               </div>
 
               <div className="flex gap-3 pt-3">
                 <button
                   type="button"
-                  onClick={guardarUsuario}
-                  className="flex-1 flex items-center justify-center gap-2 bg-[#009b63] text-white px-4 py-3 rounded-xl hover:bg-[#007f52] transition"
+                  onClick={guardarEmpleado}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#009b63] px-4 py-3 text-white transition hover:bg-[#007f52]"
                 >
                   <Plus size={20} />
-                  {editandoId ? "Guardar cambios" : "Agregar"}
+                  {editandoId ? "Guardar cambios" : "Crear"}
                 </button>
 
                 {editandoId && (
                   <button
                     type="button"
                     onClick={limpiarFormulario}
-                    className="px-4 py-3 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
+                    className="rounded-xl border border-gray-300 px-4 py-3 text-gray-600 transition hover:bg-gray-100"
                   >
                     Cancelar
                   </button>
                 )}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* TABLA */}
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden">
-            <div className="p-6 border-b border-gray-200">
+          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-md xl:col-span-2">
+            <div className="border-b border-gray-200 p-6">
               <h2 className="text-xl font-semibold text-gray-800">
-                Lista de usuarios
+                Empleados
               </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                Total: {usuarios.length}
+
+              <p className="mt-1 text-sm text-gray-500">
+                Total: {empleados.length}
               </p>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left">
+              <table className="w-full min-w-[1200px] text-left">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                      Nombre
-                    </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                      Correo
-                    </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                      Puesto
-                    </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                      Departamento
-                    </th>
-                    <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right">
-                      Acciones
-                    </th>
+                    <Th>ID</Th>
+                    <Th>Empleado</Th>
+                    <Th>Tipo</Th>
+                    <Th>Área</Th>
+                    <Th>Puesto</Th>
+                    <Th>Ingreso</Th>
+                    <Th>Días derecho</Th>
+                    <Th>Saldo</Th>
+                    <Th>Semáforo</Th>
+                    <Th align="right">Acciones</Th>
                   </tr>
                 </thead>
 
                 <tbody>
-                  {usuarios.length === 0 ? (
+                  {empleados.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={5}
+                        colSpan={10}
                         className="px-6 py-10 text-center text-gray-500"
                       >
-                        No hay usuarios registrados.
+                        No hay empleados registrados.
                       </td>
                     </tr>
                   ) : (
-                    usuarios.map((usuario) => (
+                    empleados.map((empleado) => (
                       <tr
-                        key={usuario.id}
+                        key={empleado.id}
                         className="border-t border-gray-100 hover:bg-gray-50"
                       >
-                        <td className="px-6 py-4 text-gray-800">
-                          {usuario.nombre}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">
-                          {usuario.correo}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">
-                          {usuario.puesto}
-                        </td>
-                        <td className="px-6 py-4 text-gray-600">
-                          {usuario.departamento}
-                        </td>
+                        <Td>{empleado.idempleado}</Td>
+                        <Td>{empleado.nombre}</Td>
+                        <Td>{empleado.tipoempleado}</Td>
+                        <Td>{empleado.area}</Td>
+                        <Td>{empleado.puesto}</Td>
+                        <Td>{formatearFecha(empleado.fechaingreso)}</Td>
+                        <Td>{empleado.diasderecho}</Td>
+                        <Td>{empleado.saldodisponible}</Td>
+                        <Td>{empleado.semaforo}</Td>
                         <td className="px-6 py-4">
                           <div className="flex justify-end gap-2">
                             <button
                               type="button"
-                              onClick={() => editarUsuario(usuario)}
-                              className="p-2 rounded-lg text-blue-600 hover:bg-blue-50 transition"
+                              onClick={() => editarEmpleado(empleado)}
+                              className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50"
                               title="Editar"
                             >
                               <Pencil size={18} />
@@ -318,8 +765,8 @@ export default function Usuarios() {
 
                             <button
                               type="button"
-                              onClick={() => eliminarUsuario(usuario.id)}
-                              className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition"
+                              onClick={() => eliminarEmpleado(empleado)}
+                              className="rounded-lg p-2 text-red-600 transition hover:bg-red-50"
                               title="Eliminar"
                             >
                               <Trash2 size={18} />
@@ -331,35 +778,164 @@ export default function Usuarios() {
                   )}
                 </tbody>
               </table>
+              <div className="flex flex-col gap-4 border-t border-gray-200 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+  <p className="text-sm text-gray-500">
+    Página {pagina} de {totalPaginas} — Total: {totalRegistros}
+  </p>
+
+  <div className="flex items-center gap-2">
+    <select
+      value={limite}
+      onChange={(e) => {
+        const nuevoLimite = Number(e.target.value);
+        setLimite(nuevoLimite);
+        obtenerEmpleados(1, nuevoLimite);
+      }}
+      className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#009b63]"
+    >
+      <option value={5}>5</option>
+      <option value={10}>10</option>
+      <option value={20}>20</option>
+      <option value={50}>50</option>
+    </select>
+
+    <button
+      type="button"
+      disabled={pagina <= 1 || cargando}
+      onClick={() => obtenerEmpleados(pagina - 1, limite)}
+      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Anterior
+    </button>
+
+    <button
+      type="button"
+      disabled={pagina >= totalPaginas || cargando}
+      onClick={() => obtenerEmpleados(pagina + 1, limite)}
+      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      Siguiente
+    </button>
+  </div>
+</div>
             </div>
-          </div>
-        </div>
-
-        <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
-          <h3 className="font-semibold text-gray-800 mb-2">
-            Formato del Excel
-          </h3>
-
-          <p className="text-sm text-gray-600">
-            El archivo debe tener columnas llamadas:
-          </p>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">
-              nombre
-            </span>
-            <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">
-              correo
-            </span>
-            <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">
-              puesto
-            </span>
-            <span className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">
-              departamento
-            </span>
-          </div>
+          </section>
         </div>
       </section>
     </main>
   );
+}
+
+function InputTexto({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  maxLength,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  maxLength?: number;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-gray-600">
+        {label}
+      </label>
+
+      <input
+        type={type}
+        value={value}
+        maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#009b63]"
+      />
+    </div>
+  );
+}
+
+function InputNumero({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-gray-600">
+        {label}
+      </label>
+
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#009b63]"
+      />
+    </div>
+  );
+}
+
+function SelectTexto({
+  label,
+  value,
+  onChange,
+  opciones,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  opciones: string[];
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium text-gray-600">
+        {label}
+      </label>
+
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-[#009b63]"
+      >
+        <option value="">Selecciona una opción</option>
+
+        {opciones.map((opcion) => (
+          <option key={opcion} value={opcion}>
+            {opcion}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function Th({
+  children,
+  align = "left",
+}: {
+  children: React.ReactNode;
+  align?: "left" | "right";
+}) {
+  return (
+    <th
+      className={`px-6 py-4 text-sm font-semibold text-gray-600 ${
+        align === "right" ? "text-right" : "text-left"
+      }`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function Td({ children }: { children: React.ReactNode }) {
+  return <td className="px-6 py-4 text-gray-700">{children}</td>;
 }
