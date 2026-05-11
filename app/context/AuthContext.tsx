@@ -21,6 +21,7 @@ type Usuario={
       id:number
       idempleado:string
       iniciocicloactual:string
+      fincicloactual:string
       nombre:string
       proporcionaldevengado:string
       puesto:string

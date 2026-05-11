@@ -49,21 +49,8 @@ export default function Vacaciones() {
     return formatearFechaInput(new Date());
   };
 
-  const obtenerFechaLimiteVacaciones = () => {
-    const fechaIngreso = usuario?.empleado?.fechaingreso;
-
-    if (!fechaIngreso) return "";
-
-    const hoy = new Date();
-    const ingreso = convertirFechaLocal(fechaIngreso);
-
-    const yearActual = hoy.getFullYear();
-    const monthIngreso = ingreso.getMonth();
-    const dayIngreso = ingreso.getDate();
-
-    const fechaLimite = new Date(yearActual, monthIngreso, dayIngreso);
-
-    return formatearFechaInput(fechaLimite);
+  const obtenerSoloFecha = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
   };
 
   const esFinDeSemana = (fecha: string) => {
@@ -106,9 +93,37 @@ export default function Vacaciones() {
     return contador;
   };
 
+  const estaDentroDelPeriodoSolicitud = () => {
+    const inicio = usuario?.empleado?.iniciocicloactual;
+    const fin = usuario?.empleado?.fincicloactual;
+
+    if (!inicio || !fin) return false;
+
+    const hoy = obtenerSoloFecha(new Date());
+    const fechaInicioSolicitud = obtenerSoloFecha(convertirFechaLocal(inicio));
+    const fechaFinSolicitud = obtenerSoloFecha(convertirFechaLocal(fin));
+
+    return hoy >= fechaInicioSolicitud && hoy <= fechaFinSolicitud;
+  };
+
+  const puedeSolicitarVacaciones = estaDentroDelPeriodoSolicitud();
+
+  const fechaInicioCicloActual = usuario?.empleado?.iniciocicloactual ?? "";
+  const fechaFinCicloActual = usuario?.empleado?.fincicloactual ?? "";
+
+  const diasDisponibles = Number(
+    usuario?.empleado?.saldodisponible ??
+      usuario?.empleado?.diasderecho ??
+      0
+  );
+
+  const diasSeleccionados =
+    fechaInicio && fechaTermino
+      ? contarDiasHabiles(fechaInicio, fechaTermino)
+      : 0;
+
   const validarFecha = (fecha: string) => {
     const hoy = obtenerFechaHoy();
-    const fechaLimite = obtenerFechaLimiteVacaciones();
 
     if (!fecha) {
       return "Debes seleccionar una fecha.";
@@ -116,10 +131,6 @@ export default function Vacaciones() {
 
     if (fecha < hoy) {
       return "No puedes seleccionar fechas pasadas.";
-    }
-
-    if (fechaLimite && fecha > fechaLimite) {
-      return `Solo puedes tomar vacaciones hasta el ${fechaLimite}.`;
     }
 
     if (esFinDeSemana(fecha)) {
@@ -146,6 +157,19 @@ export default function Vacaciones() {
       document.body.style.overflow = "";
     };
   }, [modalAbierto, modalPeriodoAbierto]);
+
+  const abrirModalSolicitud = () => {
+    if (!puedeSolicitarVacaciones) {
+      toast.warning(
+        `Solo puedes hacer tu solicitud del ${formatearFecha(
+          fechaInicioCicloActual
+        )} al ${formatearFecha(fechaFinCicloActual)}.`
+      );
+      return;
+    }
+
+    setModalAbierto(true);
+  };
 
   const abrirModalPeriodo = async () => {
     const token = localStorage.getItem("token");
@@ -177,8 +201,6 @@ export default function Vacaciones() {
 
       const data = await res.json();
 
-      console.log("Respuesta solicitudes:", data);
-
       if (!res.ok) {
         toast.error(data.message || "Error al consultar las solicitudes");
         return;
@@ -195,6 +217,11 @@ export default function Vacaciones() {
 
   const enviarSolicitud = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!puedeSolicitarVacaciones) {
+      toast.error("Ya no estás dentro del periodo permitido para solicitar.");
+      return;
+    }
 
     const errorFechaInicio = validarFecha(fechaInicio);
     const errorFechaTermino = validarFecha(fechaTermino);
@@ -214,12 +241,11 @@ export default function Vacaciones() {
       return;
     }
 
-    const diasDerecho = Number(usuario?.empleado?.diasderecho ?? 0);
     const diasSolicitados = contarDiasHabiles(fechaInicio, fechaTermino);
 
-    if (diasSolicitados > diasDerecho) {
+    if (diasSolicitados > diasDisponibles) {
       toast.error(
-        `Solo tienes derecho a ${diasDerecho} días. Estás solicitando ${diasSolicitados} días hábiles.`
+        `Solo tienes ${diasDisponibles} días disponibles. Estás solicitando ${diasSolicitados} días hábiles.`
       );
       return;
     }
@@ -265,17 +291,9 @@ export default function Vacaciones() {
     }
   };
 
-  const fechaLimiteVacaciones = obtenerFechaLimiteVacaciones();
-  const diasDerecho = Number(usuario?.empleado?.diasderecho ?? 0);
-  const diasSeleccionados =
-    fechaInicio && fechaTermino
-      ? contarDiasHabiles(fechaInicio, fechaTermino)
-      : 0;
-
   return (
     <section className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-6xl">
-        {/* Título de página */}
         <div className="mb-8">
           <h1 className="mb-2 text-2xl font-bold text-gray-800 sm:text-3xl">
             Mis Vacaciones
@@ -288,10 +306,8 @@ export default function Vacaciones() {
           </p>
         </div>
 
-        {/* Card principal */}
         <div className="rounded-2xl bg-white p-5 shadow-sm sm:p-8 md:p-10">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
-            {/* Columna izquierda */}
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Antigüedad</p>
@@ -317,21 +333,17 @@ export default function Vacaciones() {
               </div>
             </div>
 
-            {/* Columna derecha */}
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Fecha de ingreso</p>
                 <p className="text-xl font-semibold text-gray-800">
-                  {formatearFecha(usuario?.empleado?.fechaingreso!) ?? "Sin información"}
+                  {usuario?.empleado?.fechaingreso
+                    ? formatearFecha(usuario.empleado.fechaingreso)
+                    : "Sin información"}
                 </p>
               </div>
 
-              <div className="border-b border-gray-200 pb-4">
-                <p className="mb-1 text-sm text-gray-500">Vigencia</p>
-                <p className="text-xl font-semibold text-gray-800">
-                  {usuario?.empleado?.diasporvencer ?? "Sin información"}
-                </p>
-              </div>
+              
 
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">
@@ -349,12 +361,34 @@ export default function Vacaciones() {
             </div>
           </div>
 
-          {/* Botón solicitud */}
-          <div className="mt-12 flex justify-center md:justify-end">
+          <div className="mt-12 flex flex-col items-center gap-3 md:items-end">
+            {!puedeSolicitarVacaciones && (
+              <p className="text-center text-sm text-red-600 md:text-right">
+                Solo puedes hacer la solicitud del{" "}
+                <span className="font-semibold">
+                  {fechaInicioCicloActual
+                    ? formatearFecha(fechaInicioCicloActual)
+                    : "Sin información"}
+                </span>{" "}
+                al{" "}
+                <span className="font-semibold">
+                  {fechaFinCicloActual
+                    ? formatearFecha(fechaFinCicloActual)
+                    : "Sin información"}
+                </span>
+                .
+              </p>
+            )}
+
             <button
               type="button"
-              onClick={() => setModalAbierto(true)}
-              className="w-full cursor-pointer rounded-xl bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 active:scale-95 sm:w-auto sm:px-8 sm:text-lg"
+              disabled={!puedeSolicitarVacaciones}
+              onClick={abrirModalSolicitud}
+              className={`w-full rounded-xl px-6 py-4 text-base font-semibold shadow-sm transition sm:w-auto sm:px-8 sm:text-lg ${
+                puedeSolicitarVacaciones
+                  ? "cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
+                  : "cursor-not-allowed bg-gray-300 text-gray-500"
+              }`}
             >
               Solicitud de Vacaciones
             </button>
@@ -362,7 +396,6 @@ export default function Vacaciones() {
         </div>
       </div>
 
-      {/* Modal para crear solicitud */}
       {modalAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm sm:px-6">
           <div className="relative max-h-[90vh] w-full max-w-lg overflow-visible rounded-2xl bg-white p-5 shadow-lg sm:p-8">
@@ -389,13 +422,15 @@ export default function Vacaciones() {
             <div className="mb-6 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-800">
               <p>
                 Días disponibles:{" "}
-                <span className="font-bold">{diasDerecho}</span>
+                <span className="font-bold">{diasDisponibles}</span>
               </p>
 
               <p>
-                Fecha límite para tomar vacaciones:{" "}
+                Fecha límite para hacer la solicitud:{" "}
                 <span className="font-bold">
-                  {formatearFecha(fechaLimiteVacaciones) || "Sin información"}
+                  {fechaFinCicloActual
+                    ? formatearFecha(fechaFinCicloActual)
+                    : "Sin información"}
                 </span>
               </p>
 
@@ -425,11 +460,6 @@ export default function Vacaciones() {
                       setFechaTermino("");
                     }}
                     minDate={convertirFechaLocal(obtenerFechaHoy())}
-                    maxDate={
-                      fechaLimiteVacaciones
-                        ? convertirFechaLocal(fechaLimiteVacaciones)
-                        : undefined
-                    }
                     filterDate={filtrarFechaPermitida}
                     locale="es"
                     dateFormat="dd/MM/yyyy"
@@ -469,9 +499,9 @@ export default function Vacaciones() {
                         fecha
                       );
 
-                      if (diasSolicitados > diasDerecho) {
+                      if (diasSolicitados > diasDisponibles) {
                         toast.error(
-                          `Solo tienes derecho a ${diasDerecho} días. Ese rango tiene ${diasSolicitados} días hábiles.`
+                          `Solo tienes ${diasDisponibles} días disponibles. Ese rango tiene ${diasSolicitados} días hábiles.`
                         );
                         return;
                       }
@@ -481,17 +511,12 @@ export default function Vacaciones() {
                     minDate={convertirFechaLocal(
                       fechaInicio || obtenerFechaHoy()
                     )}
-                    maxDate={
-                      fechaLimiteVacaciones
-                        ? convertirFechaLocal(fechaLimiteVacaciones)
-                        : undefined
-                    }
                     filterDate={filtrarFechaPermitida}
                     locale="es"
                     dateFormat="dd/MM/yyyy"
                     placeholderText="Selecciona fecha término"
                     calendarClassName="calendario-grande"
-  popperPlacement="bottom-start"
+                    popperPlacement="bottom-start"
                     popperClassName="z-[9999]"
                     disabled={!fechaInicio}
                     className="w-full rounded-xl border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:bg-gray-100"
@@ -524,7 +549,6 @@ export default function Vacaciones() {
         </div>
       )}
 
-      {/* Modal solicitudes del empleado */}
       {modalPeriodoAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-6 backdrop-blur-sm sm:px-6">
           <div className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-5 shadow-lg sm:p-8">

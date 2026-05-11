@@ -73,16 +73,13 @@ export default function ImportarVacacionesPage() {
   try {
     setCargando(true);
 
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/paginado?page=${page}&limit=${limit}`,
-      {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vacaciones/paginado?page=${page}&limit=${limit}`,{
         headers: token
           ? {
               Authorization: `Bearer ${token}`,
             }
           : undefined,
-      }
-    );
+      });
 
     const result = await res.json();
 

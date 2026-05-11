@@ -93,7 +93,7 @@ export default function AutorizacionVacaciones() {
           },
         }
       );
-
+      
       const data = await res.json();
 
       if (!res.ok) {
@@ -103,6 +103,7 @@ export default function AutorizacionVacaciones() {
 
       toast.success("Solicitud aprobada correctamente");
       await obtenerSolicitudesPorArea();
+      
     } catch (error) {
       toast.warning("No se pudo conectar con el servidor");
     } finally {
