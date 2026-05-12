@@ -117,6 +117,11 @@ export default function Vacaciones() {
       0
   );
 
+  const tieneSaldoDisponible = diasDisponibles > 0;
+
+  const puedeAbrirSolicitud =
+    puedeSolicitarVacaciones && tieneSaldoDisponible;
+
   const diasSeleccionados =
     fechaInicio && fechaTermino
       ? contarDiasHabiles(fechaInicio, fechaTermino)
@@ -159,6 +164,11 @@ export default function Vacaciones() {
   }, [modalAbierto, modalPeriodoAbierto]);
 
   const abrirModalSolicitud = () => {
+    if (!tieneSaldoDisponible) {
+      toast.warning("No tienes saldo disponible para solicitar vacaciones.");
+      return;
+    }
+
     if (!puedeSolicitarVacaciones) {
       toast.warning(
         `Solo puedes hacer tu solicitud del ${formatearFecha(
@@ -218,6 +228,11 @@ export default function Vacaciones() {
   const enviarSolicitud = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
+    if (!tieneSaldoDisponible) {
+      toast.error("No tienes saldo disponible para solicitar vacaciones.");
+      return;
+    }
+
     if (!puedeSolicitarVacaciones) {
       toast.error("Ya no estás dentro del periodo permitido para solicitar.");
       return;
@@ -242,6 +257,11 @@ export default function Vacaciones() {
     }
 
     const diasSolicitados = contarDiasHabiles(fechaInicio, fechaTermino);
+
+    if (diasSolicitados <= 0) {
+      toast.error("Debes seleccionar al menos un día hábil.");
+      return;
+    }
 
     if (diasSolicitados > diasDisponibles) {
       toast.error(
@@ -343,8 +363,6 @@ export default function Vacaciones() {
                 </p>
               </div>
 
-              
-
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">
                   Último periodo de vacaciones
@@ -362,7 +380,11 @@ export default function Vacaciones() {
           </div>
 
           <div className="mt-12 flex flex-col items-center gap-3 md:items-end">
-            {!puedeSolicitarVacaciones && (
+            {!tieneSaldoDisponible ? (
+              <p className="text-center text-sm text-red-600 md:text-right">
+                No tienes saldo disponible para solicitar vacaciones.
+              </p>
+            ) : !puedeSolicitarVacaciones ? (
               <p className="text-center text-sm text-red-600 md:text-right">
                 Solo puedes hacer la solicitud del{" "}
                 <span className="font-semibold">
@@ -378,14 +400,14 @@ export default function Vacaciones() {
                 </span>
                 .
               </p>
-            )}
+            ) : null}
 
             <button
               type="button"
-              disabled={!puedeSolicitarVacaciones}
+              disabled={!puedeAbrirSolicitud}
               onClick={abrirModalSolicitud}
               className={`w-full rounded-xl px-6 py-4 text-base font-semibold shadow-sm transition sm:w-auto sm:px-8 sm:text-lg ${
-                puedeSolicitarVacaciones
+                puedeAbrirSolicitud
                   ? "cursor-pointer bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95"
                   : "cursor-not-allowed bg-gray-300 text-gray-500"
               }`}
@@ -595,14 +617,14 @@ export default function Vacaciones() {
                       <div>
                         <p className="text-sm text-gray-500">Fecha inicio</p>
                         <p className="font-semibold text-gray-800">
-                          {solicitud.fechainicio}
+                          {formatearFecha(solicitud.fechainicio)}
                         </p>
                       </div>
 
                       <div>
                         <p className="text-sm text-gray-500">Fecha término</p>
                         <p className="font-semibold text-gray-800">
-                          {solicitud.fechatermino}
+                          {formatearFecha(solicitud.fechatermino)}
                         </p>
                       </div>
 

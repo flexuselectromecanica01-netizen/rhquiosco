@@ -62,6 +62,7 @@ export type SolicitudTabla = {
   empleado: string;
   idempleado: string;
   fechaCreacion: string;
+  
   departamento: string;
   puesto: string;
   fechaInicio: string;
