@@ -348,7 +348,7 @@ export default function Vacaciones() {
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Saldo</p>
                 <p className="text-xl font-semibold text-gray-800">
-                  {usuario?.empleado?.saldodisponible ?? "Sin información"}
+                  {usuario?.empleado?.saldodisponible ?? "Sin información"} Dias disponibles
                 </p>
               </div>
             </div>

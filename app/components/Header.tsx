@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
   const [openMenu, setOpenMenu] = useState(false);
+  
   const { usuario, logout } = useAuth();
   const router = useRouter();
 
@@ -57,7 +58,7 @@ export default function Header() {
               </div>
 
               <Link
-                href="/update-password"
+                href={`/update-password/${usuario?.id}`}
                 onClick={() => setOpenMenu(false)}
                 className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition"
               >
