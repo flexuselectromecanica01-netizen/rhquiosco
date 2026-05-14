@@ -655,7 +655,7 @@ const limpiarBusqueda = () => {
               type="button"
               onClick={() => obtenerEmpleados()}
               disabled={cargando}
-              className="flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center cursor-pointer justify-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw size={20} />
               {cargando ? "Cargando..." : "Actualizar"}
@@ -664,7 +664,7 @@ const limpiarBusqueda = () => {
             <button
               type="button"
               onClick={() => inputExcelRef.current?.click()}
-              className="flex items-center justify-center gap-2 rounded-xl bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52]"
+              className="flex items-center justify-center cursor-pointer gap-2 rounded-xl bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52]"
             >
               <Upload size={20} />
               Importar Excel
@@ -674,7 +674,7 @@ const limpiarBusqueda = () => {
               type="button"
               disabled={guardando}
               onClick={guardarImportadosEnBaseDatos}
-              className="flex items-center justify-center gap-2 rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center cursor-pointer justify-center gap-2 rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Save size={20} />
               {guardando ? "Guardando..." : "Guardar importados"}
@@ -808,6 +808,7 @@ const limpiarBusqueda = () => {
                 onChange={(value) =>
                   setFormulario({ ...formulario, diastomados: value })
                 }
+                disabled={true}
               />
 
               <InputTexto
@@ -869,7 +870,7 @@ const limpiarBusqueda = () => {
                   <button
                     type="button"
                     onClick={guardarEmpleado}
-                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#009b63] px-4 py-3 text-white transition hover:bg-[#007f52]"
+                    className="flex flex-1 items-center cursor-pointer justify-center gap-2 rounded-xl bg-[#009b63] px-4 py-3 text-white transition hover:bg-[#007f52]"
                   >
                     <Plus size={20} />
                     {editandoId ? "Guardar cambios" : "Crear"}
@@ -879,7 +880,7 @@ const limpiarBusqueda = () => {
                     <button
                       type="button"
                       onClick={limpiarFormulario}
-                      className="rounded-xl border border-gray-300 px-4 py-3 text-gray-600 transition hover:bg-gray-100"
+                      className="rounded-xl border border-gray-300 px-4 py-3 text-gray-600 transition cursor-pointer hover:bg-gray-100"
                     >
                       Cancelar
                     </button>
@@ -935,7 +936,7 @@ const limpiarBusqueda = () => {
       type="button"
       onClick={buscarPorIdEmpleado}
       disabled={cargando}
-      className="rounded-xl bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52] disabled:cursor-not-allowed disabled:opacity-60"
+      className="rounded-xl cursor-pointer bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52] disabled:cursor-not-allowed disabled:opacity-60"
     >
       Buscar
     </button>
@@ -944,7 +945,7 @@ const limpiarBusqueda = () => {
       type="button"
       onClick={limpiarBusqueda}
       disabled={cargando}
-      className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+      className="rounded-xl border cursor-pointer border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
     >
       Limpiar
     </button>
@@ -1016,7 +1017,7 @@ const limpiarBusqueda = () => {
                               <button
                                 type="button"
                                 onClick={() => editarEmpleado(empleado)}
-                                className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50"
+                                className="rounded-lg p-2 text-blue-600 transition cursor-pointer hover:bg-blue-50"
                                 title="Editar"
                               >
                                 <Pencil size={18} />
@@ -1026,7 +1027,7 @@ const limpiarBusqueda = () => {
                                 type="button"
                                 onClick={() => eliminarEmpleado(empleado)}
                                 disabled={empleado.idempleado ==="0001"}
-                                className={`rounded-lg p-2 transition ${
+                                className={`rounded-lg p-2 transition cursor-pointer ${
     empleado.idempleado === "0001"
       ? "cursor-not-allowed text-gray-300"
       : "text-red-600 hover:bg-red-50"
@@ -1324,7 +1325,7 @@ function InputTexto({
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
+        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
       />
     </div>
   );
@@ -1334,10 +1335,12 @@ function InputNumero({
   label,
   value,
   onChange,
+  disabled = false,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
+   disabled?: boolean;
 }) {
   return (
     <div>
@@ -1348,8 +1351,9 @@ function InputNumero({
       <input
         type="number"
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
+        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
       />
     </div>
   );
