@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { es } from "date-fns/locale/es";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import "react-datepicker/dist/react-datepicker.css";
 import { formatearFecha } from "@/src/utils/formatearFecha";
 
@@ -36,6 +38,56 @@ export default function Vacaciones() {
     const [year, month, day] = fecha.split("-").map(Number);
     return new Date(year, month - 1, day);
   };
+
+  const generarPdfSolicitudes = () => {
+  if (!usuario?.empleado) {
+    toast.error("No hay información del empleado");
+    return;
+  }
+
+  if (solicitudes.length === 0) {
+    toast.error("No hay solicitudes para generar el PDF");
+    return;
+  }
+
+  const doc = new jsPDF();
+
+  const nombreEmpleado = usuario.empleado.nombre ?? "Sin información";
+  const idEmpleado = usuario.empleado.idempleado ?? "Sin información";
+
+  doc.setFontSize(16);
+  doc.text("Solicitudes de vacaciones", 14, 18);
+
+  doc.setFontSize(11);
+  doc.text(`Empleado: ${nombreEmpleado}`, 14, 28);
+  doc.text(`Número de empleado: ${idEmpleado}`, 14, 35);
+
+  doc.setFontSize(10);
+  doc.text(`Fecha de generación: ${formatearFecha(new Date().toISOString())}`, 14, 42);
+
+  autoTable(doc, {
+    startY: 50,
+    head: [["Fecha inicio", "Fecha término", "Días totales", "Estatus", "Motivo rechazo"]],
+    body: solicitudes.map((solicitud) => [
+      formatearFecha(solicitud.fechainicio),
+      formatearFecha(solicitud.fechatermino),
+      String(solicitud.diastotales),
+      solicitud.estatus,
+      solicitud.motivorechazo || "N/A",
+    ]),
+    styles: {
+      fontSize: 9,
+      cellPadding: 3,
+    },
+    headStyles: {
+      fillColor: [16, 185, 129],
+      textColor: 255,
+      fontStyle: "bold",
+    },
+  });
+
+  doc.save(`solicitudes-vacaciones-${idEmpleado}.pdf`);
+};
 
   const formatearFechaInput = (date: Date) => {
     const year = date.getFullYear();
@@ -362,6 +414,12 @@ export default function Vacaciones() {
                     : "Sin información"}
                 </p>
               </div>
+              <div className="border-b border-gray-200 pb-4">
+                <p className="mb-1 text-sm text-gray-500">Dias tomados</p>
+                <p className="text-xl font-semibold text-gray-800">
+                  {usuario?.empleado.diastomados}
+                </p>
+              </div>
 
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">
@@ -658,15 +716,24 @@ export default function Vacaciones() {
               </div>
             )}
 
-            <div className="mt-6 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setModalPeriodoAbierto(false)}
-                className="cursor-pointer rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
-              >
-                Cerrar
-              </button>
-            </div>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+  <button
+    type="button"
+    onClick={generarPdfSolicitudes}
+    disabled={cargandoSolicitudes || solicitudes.length === 0}
+    className="cursor-pointer rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition hover:bg-gray-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
+  >
+    Descargar PDF
+  </button>
+
+  <button
+    type="button"
+    onClick={() => setModalPeriodoAbierto(false)}
+    className="cursor-pointer rounded-xl bg-emerald-600 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
+  >
+    Cerrar
+  </button>
+</div>
           </div>
         </div>
       )}
