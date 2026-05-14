@@ -62,7 +62,7 @@ export default function Footer(){
                 Correo:
               </h4>
               <p className="text-sm text-gray-700">
-                sales@flexuselec.com
+                rh@flexuselec.com
               </p>
             </div>
           </div>
@@ -76,7 +76,7 @@ export default function Footer(){
                 Teléfono:
               </h4>
               <p className="text-sm text-gray-700">
-                +52 332-267-3601
+                +52 331 748 9254
               </p>
             </div>
           </div>

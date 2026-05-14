@@ -1,8 +1,10 @@
 "use client";
-
+import { useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { Lock, CheckCircle } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from "../../context/AuthContext";
 import { useUpdatePasswordSubmit } from "@/src/hooks/useUpdatePasswordSubmit";
 
 type UpdatePasswordForm = {
@@ -13,6 +15,13 @@ type UpdatePasswordForm = {
 export default function UpdatePasswordPage() {
   const { onSubmit } = useUpdatePasswordSubmit();
 
+  const params = useParams();
+  const router = useRouter();
+
+  const { usuario, loading } = useAuth();
+
+  const idParam = params.id as string;
+
   const {
     register,
     handleSubmit,
@@ -21,6 +30,26 @@ export default function UpdatePasswordPage() {
   } = useForm<UpdatePasswordForm>();
 
   const password = watch("password");
+
+  useEffect(() => {
+  if (loading) return;
+
+  if (!usuario) {
+    router.replace("/login");
+    return;
+  }
+
+  const idSesion = String(usuario.id);
+
+  if (idParam !== idSesion) {
+    router.replace(`/update-password/${idSesion}`);
+  }
+}, [idParam, usuario, loading, router]);
+
+  if (loading) {
+    return null;
+  }
+
 
   return (
     <main className="min-h-screen bg-[#1f252b]">
