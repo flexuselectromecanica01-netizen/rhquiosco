@@ -2,14 +2,14 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { UserCircle, LogOut, KeyRound } from "lucide-react";
+import { UserCircle, LogOut, KeyRound, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 
 export default function Header() {
   const [openMenu, setOpenMenu] = useState(false);
-  
+
   const { usuario, logout } = useAuth();
   const router = useRouter();
 
@@ -54,8 +54,16 @@ export default function Header() {
                 <p className="text-xs text-gray-500">
                   {usuario?.nombre ?? "Usuario"}
                 </p>
-
               </div>
+
+              <Link
+                href="/aviso-de-privacidad"
+                onClick={() => setOpenMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition"
+              >
+                <ShieldCheck size={18} />
+                Aviso de privacidad
+              </Link>
 
               <Link
                 href={`/update-password/${usuario?.id}`}

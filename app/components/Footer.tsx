@@ -4,6 +4,7 @@ import {
   Mail,
   Phone,
 } from "lucide-react";
+import Link from "next/link";
 
 export default function Footer(){
     return(
@@ -83,17 +84,28 @@ export default function Footer(){
 
         {/* FOOTER FINAL */}
         <p className="mt-6 text-sm text-gray-500 text-center bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
-            Este sitio es informativo. Para cualquier error, duda o aclaración favor de consultar con RH.
-        </p>
-        <footer className="bg-[#111111] text-white py-8">
-          <div className="text-center text-sm">
-            © Copyright{" "}
-            <span className="font-bold">
-              Flexus Electromechanical.
-            </span>{" "}
-            All Rights Reserved
-          </div>
-        </footer>
+  Este sitio es informativo. Para cualquier error, duda o aclaración favor de
+  consultar con RH.
+</p>
+
+<footer className="bg-[#111111] text-white py-8">
+  <div className="flex flex-col items-center justify-center gap-3 text-center text-sm">
+    <Link
+      href="/aviso-de-privacidad"
+      className="text-gray-300 hover:text-emerald-500 transition"
+    >
+      Aviso de privacidad
+    </Link>
+
+    <div>
+      © Copyright{" "}
+      <span className="font-bold">
+        Flexus Electromechanical.
+      </span>{" "}
+      All Rights Reserved
+    </div>
+  </div>
+</footer>
       </section>
     )
 }

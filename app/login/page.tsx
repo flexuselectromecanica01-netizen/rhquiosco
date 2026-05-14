@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { createLoginSubmit } from "@/src/lib/login";
 import { LoginForm } from "@/src/types/solicitudes";
+import Link from "next/link";
 
 
 export default function Login() {
@@ -164,6 +165,17 @@ export default function Login() {
             >
               {isSubmitting ? "Ingresando..." : "Ingresar"}
             </button>
+
+            <p className="mt-5 text-center text-xs leading-5 text-gray-500 sm:text-sm">
+  Al ingresar al sistema, usted reconoce haber leído el{" "}
+  <Link
+    href="/aviso-de-privacidad"
+    className="font-semibold text-[#009b63] hover:underline"
+  >
+    Aviso de Privacidad
+  </Link>
+  .
+</p>
 
             <p className="mt-6 text-center text-xs text-gray-500 sm:text-sm">
               © {new Date().getFullYear()} Flexus Electro
