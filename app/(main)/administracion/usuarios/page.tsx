@@ -45,6 +45,7 @@ export default function ImportarVacacionesPage() {
   const [rolSeleccionado, setRolSeleccionado] = useState("");
   const [cambiandoRol, setCambiandoRol] = useState(false);
   const [reseteandoPassword, setReseteandoPassword] = useState(false);
+  const [busquedaIdEmpleado, setBusquedaIdEmpleado] = useState("");
   const [passwordTemporal, setPasswordTemporal] = useState("");
 
   const [pagina, setPagina] = useState(1);
@@ -80,39 +81,61 @@ export default function ImportarVacacionesPage() {
     setPasswordTemporal("");
   };
 
-  const obtenerEmpleados = async (page = pagina, limit = limite) => {
-    try {
-      setCargando(true);
+  const obtenerEmpleados = async (
+  page = pagina,
+  limit = limite,
+  idempleado = busquedaIdEmpleado
+) => {
+  try {
+    setCargando(true);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/paginado?page=${page}&limit=${limit}`,
-        {
-          headers: token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : undefined,
-        }
-      );
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
 
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error(result.message || "Error al obtener empleados");
-        return;
-      }
-
-      setEmpleados(result.data);
-      setPagina(result.meta.page);
-      setLimite(result.meta.limit);
-      setTotalPaginas(result.meta.totalPages);
-      setTotalRegistros(result.meta.total);
-    } catch (error) {
-      toast.error("No se pudo conectar con el servidor");
-    } finally {
-      setCargando(false);
+    if (idempleado.trim() !== "") {
+      params.append("idempleado", idempleado.trim());
     }
-  };
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/paginado?${params.toString()}`,
+      {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
+      }
+    );
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      toast.error(result.message || "Error al obtener empleados");
+      return;
+    }
+
+    setEmpleados(result.data);
+    setPagina(result.meta.page);
+    setLimite(result.meta.limit);
+    setTotalPaginas(result.meta.totalPages);
+    setTotalRegistros(result.meta.total);
+  } catch (error) {
+    toast.error("No se pudo conectar con el servidor");
+  } finally {
+    setCargando(false);
+  }
+};
+
+const buscarPorIdEmpleado = () => {
+  obtenerEmpleados(1, limite, busquedaIdEmpleado);
+};
+
+const limpiarBusqueda = () => {
+  setBusquedaIdEmpleado("");
+  obtenerEmpleados(1, limite, "");
+};
 
   useEffect(() => {
     obtenerEmpleados(1, 5);
@@ -504,6 +527,11 @@ export default function ImportarVacacionesPage() {
   const eliminarEmpleado = async (empleado: VacacioneImport) => {
     if (!empleado.id) return;
 
+    if(empleado.idempleado==="0001"){
+      toast.error("El usuario administrador principal no se puede eliminar")
+      return
+    }
+
     const confirmar = confirm("¿Seguro que deseas eliminar este registro?");
 
     if (!confirmar) return;
@@ -678,6 +706,7 @@ export default function ImportarVacacionesPage() {
                   })
                 }
                 placeholder="0293"
+                disabled={formulario.idempleado === "0001"}
               />
 
               <InputTexto
@@ -878,6 +907,50 @@ export default function ImportarVacacionesPage() {
                 </div>
               </div>
 
+              <div className="border-b border-gray-200 bg-white px-6 py-4">
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <div className="flex-1">
+      <label className="mb-1.5 block text-sm font-medium text-gray-600">
+        Buscar por ID empleado
+      </label>
+
+      <input
+        type="text"
+        value={busquedaIdEmpleado}
+        maxLength={4}
+        onChange={(e) =>
+          setBusquedaIdEmpleado(e.target.value.replace(/\D/g, ""))
+        }
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            buscarPorIdEmpleado();
+          }
+        }}
+        placeholder="Ej. 0001"
+        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
+      />
+    </div>
+
+    <button
+      type="button"
+      onClick={buscarPorIdEmpleado}
+      disabled={cargando}
+      className="rounded-xl bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52] disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      Buscar
+    </button>
+
+    <button
+      type="button"
+      onClick={limpiarBusqueda}
+      disabled={cargando}
+      className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      Limpiar
+    </button>
+  </div>
+</div>
+
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left">
                   <thead className="bg-gray-50">
@@ -952,7 +1025,12 @@ export default function ImportarVacacionesPage() {
                               <button
                                 type="button"
                                 onClick={() => eliminarEmpleado(empleado)}
-                                className="rounded-lg p-2 text-red-600 transition hover:bg-red-50"
+                                disabled={empleado.idempleado ==="0001"}
+                                className={`rounded-lg p-2 transition ${
+    empleado.idempleado === "0001"
+      ? "cursor-not-allowed text-gray-300"
+      : "text-red-600 hover:bg-red-50"
+  }`}
                                 title="Eliminar"
                               >
                                 <Trash2 size={18} />
@@ -1223,6 +1301,7 @@ function InputTexto({
   placeholder,
   type = "text",
   maxLength,
+  disabled=false
 }: {
   label: string;
   value: string;
@@ -1230,6 +1309,7 @@ function InputTexto({
   placeholder?: string;
   type?: string;
   maxLength?: number;
+  disabled?:boolean
 }) {
   return (
     <div>
@@ -1241,6 +1321,7 @@ function InputTexto({
         type={type}
         value={value}
         maxLength={maxLength}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
