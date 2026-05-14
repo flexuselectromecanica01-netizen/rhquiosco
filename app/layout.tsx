@@ -19,6 +19,11 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "rhquiosco",
   description: "rhquiosco",
+  icons:{
+    icon:"/logosuperior.png",
+    shortcut: "/logosuperior.png",
+    apple: "/logosuperior.png",
+  }
 };
 
 export default function RootLayout({

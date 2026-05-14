@@ -991,7 +991,7 @@ const limpiarBusqueda = () => {
                                 {empleado.nombre}
                               </p>
                               <p className="text-xs text-gray-500">
-                                {empleado.puesto}
+                                {empleado.area}
                               </p>
                             </div>
                           </Td>
