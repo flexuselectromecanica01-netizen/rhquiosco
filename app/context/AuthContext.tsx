@@ -7,6 +7,7 @@ type Usuario={
     idempleado:string
     nombre:string
     rol:string
+    subrol:string
     actualizarpassword:boolean
     empleado:{
       accionsugerida:string

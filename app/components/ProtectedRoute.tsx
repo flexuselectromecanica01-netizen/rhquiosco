@@ -17,17 +17,72 @@ export default function ProtectedRoute({
 
   const rutasPublicas = ["/login"];
 
-  const rutaPorRol = (rol: string) => {
-    switch (rol.toLowerCase()) {
-      case "supervisor":
-        return "/supervisor";
-      case "administrador":
-        return "/administracion";
-      case "empleado":
-        return "/";
-      default:
-        return "/";
+  const rutaPorRol = (rol: string, subrol?: string) => {
+    const rolNormalizado = rol?.toLowerCase();
+    const subrolNormalizado = subrol?.toLowerCase();
+
+    if (rolNormalizado === "administrador") {
+      return "/administracion";
     }
+
+    if (rolNormalizado === "supervisor") {
+      return "/supervisor";
+    }
+
+    if (
+      rolNormalizado === "empleado" &&
+      subrolNormalizado === "maestra"
+    ) {
+      return "/maestra-linea";
+    }
+
+    if (rolNormalizado === "empleado") {
+      return "/";
+    }
+
+    return "/";
+  };
+
+  const puedeEntrarARuta = (
+    pathname: string,
+    rol: string,
+    subrol?: string
+  ) => {
+    const rolNormalizado = rol?.toLowerCase();
+    const subrolNormalizado = subrol?.toLowerCase();
+
+    if (pathname === "/update-password") {
+      return true;
+    }
+
+    if (rolNormalizado === "administrador") {
+      return pathname.startsWith("/administracion");
+    }
+
+    if (rolNormalizado === "supervisor") {
+      return pathname.startsWith("/supervisor");
+    }
+
+    if (
+      rolNormalizado === "empleado" &&
+      subrolNormalizado === "maestra"
+    ) {
+      return pathname.startsWith("/maestra-linea");
+    }
+
+    if (rolNormalizado === "empleado") {
+      const rutasBloqueadas = [
+        "/administracion",
+        "/supervisor",
+        "/maestra-linea",
+      ];
+
+      return !rutasBloqueadas.some((ruta) =>
+        pathname.startsWith(ruta)
+      );
+    }
+
+    return false;
   };
 
   useEffect(() => {
@@ -39,7 +94,7 @@ export default function ProtectedRoute({
 
     if (esRutaPublica) {
       if (token && usuario) {
-        router.replace(rutaPorRol(usuario.rol));
+        router.replace(rutaPorRol(usuario.rol, usuario.subrol));
         return;
       }
 
@@ -53,23 +108,31 @@ export default function ProtectedRoute({
       return;
     }
 
-    if (usuario.actualizarpassword === true && pathname !== "/update-password") {
+    if (
+      usuario.actualizarpassword === true &&
+      pathname !== "/update-password"
+    ) {
       router.replace("/update-password");
       return;
     }
 
-    if (usuario.actualizarpassword === false && pathname === "/update-password") {
-      router.replace(rutaPorRol(usuario.rol));
+    if (
+      usuario.actualizarpassword === false &&
+      pathname === "/update-password"
+    ) {
+      router.replace(rutaPorRol(usuario.rol, usuario.subrol));
       return;
     }
 
-    if (usuario.actualizarpassword === false && pathname === "/") {
-      const destino = rutaPorRol(usuario.rol);
+    const tienePermiso = puedeEntrarARuta(
+      pathname,
+      usuario.rol,
+      usuario.subrol
+    );
 
-      if (destino !== pathname) {
-        router.replace(destino);
-        return;
-      }
+    if (!tienePermiso) {
+      router.replace(rutaPorRol(usuario.rol, usuario.subrol));
+      return;
     }
 
     setValidando(false);

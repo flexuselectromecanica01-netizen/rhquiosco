@@ -23,7 +23,7 @@ export default function Vacaciones() {
 
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
-
+  
   const diasFestivos = [
     "2026-01-01",
     "2026-02-02",
@@ -144,6 +144,8 @@ export default function Vacaciones() {
 
     return contador;
   };
+
+  console.log(usuario)
 
   const estaDentroDelPeriodoSolicitud = () => {
     const inicio = usuario?.empleado?.iniciocicloactual;
