@@ -23,77 +23,6 @@ export default function Vacaciones() {
 
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
-
-  const [fechasOcupadas, setFechasOcupadas] = useState<string[]>([]);
-
-  const obtenerFechasOcupadas = async () => {
-  const token = localStorage.getItem("token");
-
-  if (!token) {
-    toast.error("Sesión expirada. Inicia sesión nuevamente.");
-    return;
-  }
-
-  if (!usuario?.bodega || !usuario?.linea) {
-    toast.warning("No se encontró bodega o línea del usuario.");
-    return;
-  }
-
-  try {
-    const params = new URLSearchParams({
-      subrol: "EMPLEADO",
-      bodega: usuario.bodega,
-      linea: usuario.linea,
-    });
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/autorizacion?${params.toString()}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      setFechasOcupadas([]);
-      return;
-    }
-
-    const fechas: string[] = [];
-
-    data.forEach((empleado: any) => {
-      empleado.solicitudes?.forEach((solicitud: any) => {
-        if (
-          solicitud.estatus === "PENDIENTE" ||
-          solicitud.estatus === "APROBADA"
-        ) {
-          const inicio = solicitud.fechainicio;
-          const fin = solicitud.fechatermino;
-
-          const fechaActual = convertirFechaLocal(inicio);
-          const fechaFinal = convertirFechaLocal(fin);
-
-          while (fechaActual <= fechaFinal) {
-            fechas.push(formatearFechaInput(fechaActual));
-            fechaActual.setDate(fechaActual.getDate() + 1);
-          }
-        }
-      });
-    });
-
-    setFechasOcupadas(fechas);
-  } catch (error) {
-    console.error(error);
-    toast.error("No se pudieron consultar las fechas ocupadas");
-  }
-};
-
-const esFechaOcupada = (fecha: string) => {
-  return fechasOcupadas.includes(fecha);
-};
   
   const diasFestivos = [
     "2026-01-01",
@@ -188,15 +117,14 @@ const esFechaOcupada = (fecha: string) => {
   };
 
   const filtrarFechaPermitida = (date: Date) => {
-  const fechaTexto = formatearFechaInput(date);
-  const dia = date.getDay();
+    const fechaTexto = formatearFechaInput(date);
+    const dia = date.getDay();
 
-  const esSabadoODomingo = dia === 0 || dia === 6;
-  const esFestivo = diasFestivos.includes(fechaTexto);
-  const ocupada = esFechaOcupada(fechaTexto);
+    const esSabadoODomingo = dia === 0 || dia === 6;
+    const esFestivo = diasFestivos.includes(fechaTexto);
 
-  return !esSabadoODomingo && !esFestivo && !ocupada;
-};
+    return !esSabadoODomingo && !esFestivo;
+  };
 
   const contarDiasHabiles = (inicio: string, termino: string) => {
     let contador = 0;
@@ -254,47 +182,26 @@ const esFechaOcupada = (fecha: string) => {
       : 0;
 
   const validarFecha = (fecha: string) => {
-  const hoy = obtenerFechaHoy();
+    const hoy = obtenerFechaHoy();
 
-  if (!fecha) {
-    return "Debes seleccionar una fecha.";
-  }
-
-  if (fecha < hoy) {
-    return "No puedes seleccionar fechas pasadas.";
-  }
-
-  if (esFinDeSemana(fecha)) {
-    return "No puedes seleccionar sábados ni domingos.";
-  }
-
-  if (esDiaFestivo(fecha)) {
-    return "No puedes seleccionar días festivos.";
-  }
-
-  if (esFechaOcupada(fecha)) {
-    return "Esta fecha ya está ocupada por otra solicitud de tu línea y bodega.";
-  }
-
-  return null;
-};
-
-const rangoTieneFechasOcupadas = (inicio: string, termino: string) => {
-  const fechaActual = convertirFechaLocal(inicio);
-  const fechaFinal = convertirFechaLocal(termino);
-
-  while (fechaActual <= fechaFinal) {
-    const fechaTexto = formatearFechaInput(fechaActual);
-
-    if (esFechaOcupada(fechaTexto)) {
-      return true;
+    if (!fecha) {
+      return "Debes seleccionar una fecha.";
     }
 
-    fechaActual.setDate(fechaActual.getDate() + 1);
-  }
+    if (fecha < hoy) {
+      return "No puedes seleccionar fechas pasadas.";
+    }
 
-  return false;
-};
+    if (esFinDeSemana(fecha)) {
+      return "No puedes seleccionar sábados ni domingos.";
+    }
+
+    if (esDiaFestivo(fecha)) {
+      return "No puedes seleccionar días festivos.";
+    }
+
+    return null;
+  };
 
   useEffect(() => {
     const hayModalAbierto = modalAbierto || modalPeriodoAbierto;
@@ -310,25 +217,23 @@ const rangoTieneFechasOcupadas = (inicio: string, termino: string) => {
     };
   }, [modalAbierto, modalPeriodoAbierto]);
 
-  const abrirModalSolicitud = async () => {
-  if (!tieneSaldoDisponible) {
-    toast.warning("No tienes saldo disponible para solicitar vacaciones.");
-    return;
-  }
+  const abrirModalSolicitud = () => {
+    if (!tieneSaldoDisponible) {
+      toast.warning("No tienes saldo disponible para solicitar vacaciones.");
+      return;
+    }
 
-  if (!puedeSolicitarVacaciones) {
-    toast.warning(
-      `Solo puedes hacer tu solicitud del ${formatearFecha(
-        fechaInicioCicloActual
-      )} al ${formatearFecha(fechaFinCicloActual)}.`
-    );
-    return;
-  }
+    if (!puedeSolicitarVacaciones) {
+      toast.warning(
+        `Solo puedes hacer tu solicitud del ${formatearFecha(
+          fechaInicioCicloActual
+        )} al ${formatearFecha(fechaFinCicloActual)}.`
+      );
+      return;
+    }
 
-  await obtenerFechasOcupadas();
-
-  setModalAbierto(true);
-};
+    setModalAbierto(true);
+  };
 
   const abrirModalPeriodo = async () => {
     const token = localStorage.getItem("token");
@@ -404,13 +309,6 @@ const rangoTieneFechasOcupadas = (inicio: string, termino: string) => {
       toast.error("La fecha término no puede ser menor que la fecha inicio.");
       return;
     }
-
-    if (rangoTieneFechasOcupadas(fechaInicio, fechaTermino)) {
-  toast.error(
-    "El rango seleccionado contiene fechas que ya están ocupadas por otra solicitud de tu línea y bodega."
-  );
-  return;
-}
 
     const diasSolicitados = contarDiasHabiles(fechaInicio, fechaTermino);
 
@@ -663,43 +561,35 @@ const rangoTieneFechasOcupadas = (inicio: string, termino: string) => {
 
                 <div className="w-full [&_.react-datepicker-wrapper]:w-full [&_.react-datepicker__input-container]:w-full">
                   <DatePicker
-
                     selected={
                       fechaTermino ? convertirFechaLocal(fechaTermino) : null
                     }
                     onChange={(date: Date | null) => {
-  if (!date) return;
+                      if (!date) return;
 
-  const fecha = formatearFechaInput(date);
+                      const fecha = formatearFechaInput(date);
 
-  if (fechaInicio && fecha < fechaInicio) {
-    toast.error(
-      "La fecha término no puede ser menor que la fecha inicio."
-    );
-    return;
-  }
+                      if (fechaInicio && fecha < fechaInicio) {
+                        toast.error(
+                          "La fecha término no puede ser menor que la fecha inicio."
+                        );
+                        return;
+                      }
 
-  if (rangoTieneFechasOcupadas(fechaInicio, fecha)) {
-    toast.error(
-      "Ese rango contiene fechas ocupadas por otra solicitud de tu línea y bodega."
-    );
-    return;
-  }
+                      const diasSolicitados = contarDiasHabiles(
+                        fechaInicio,
+                        fecha
+                      );
 
-  const diasSolicitados = contarDiasHabiles(
-    fechaInicio,
-    fecha
-  );
+                      if (diasSolicitados > diasDisponibles) {
+                        toast.error(
+                          `Solo tienes ${diasDisponibles} días disponibles. Ese rango tiene ${diasSolicitados} días hábiles.`
+                        );
+                        return;
+                      }
 
-  if (diasSolicitados > diasDisponibles) {
-    toast.error(
-      `Solo tienes ${diasDisponibles} días disponibles. Ese rango tiene ${diasSolicitados} días hábiles.`
-    );
-    return;
-  }
-
-  setFechaTermino(fecha);
-}}
+                      setFechaTermino(fecha);
+                    }}
                     minDate={convertirFechaLocal(
                       fechaInicio || obtenerFechaHoy()
                     )}

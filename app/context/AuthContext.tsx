@@ -9,6 +9,8 @@ type Usuario={
     rol:string
     subrol:string
     actualizarpassword:boolean
+    bodega:string
+    linea:string
     empleado:{
       accionsugerida:string
       antiguedad:number

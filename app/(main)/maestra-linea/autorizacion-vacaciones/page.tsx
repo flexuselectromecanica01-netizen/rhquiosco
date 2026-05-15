@@ -20,7 +20,7 @@ export default function AutorizacionVacaciones() {
   const [paginaActual, setPaginaActual] = useState(1);
   const [registrosPorPagina, setRegistrosPorPagina] = useState(5);
 
-  const obtenerSolicitudesMaestras = useCallback(async () => {
+  const obtenerSolicitudesPorAsignacion = useCallback(async () => {
   if (!usuario?.bodega || !usuario?.linea || !token) {
     setLoading(false);
     return;
@@ -29,8 +29,11 @@ export default function AutorizacionVacaciones() {
   try {
     setLoading(true);
 
+    const subrolABuscar =
+      usuario.rol === "SUPERVISOR" ? "MAESTRA" : "EMPLEADO";
+
     const params = new URLSearchParams({
-      subrol: "MAESTRA",
+      subrol: subrolABuscar,
       bodega: usuario.bodega,
       linea: usuario.linea,
     });
@@ -84,8 +87,8 @@ export default function AutorizacionVacaciones() {
 }, [usuario, token]);
 
   useEffect(() => {
-    obtenerSolicitudesMaestras();
-  }, [obtenerSolicitudesMaestras]);
+    obtenerSolicitudesPorAsignacion();
+  }, [obtenerSolicitudesPorAsignacion]);
 
   const aprobarSolicitud = async (id: number) => {
     if (!token) {
@@ -114,7 +117,7 @@ export default function AutorizacionVacaciones() {
       }
 
       toast.success("Solicitud aprobada correctamente");
-      await obtenerSolicitudesMaestras();
+      await obtenerSolicitudesPorAsignacion();
     } catch (error) {
       toast.warning("No se pudo conectar con el servidor");
     } finally {
@@ -160,7 +163,7 @@ export default function AutorizacionVacaciones() {
       }
 
       toast.success("Solicitud rechazada correctamente");
-      await obtenerSolicitudesMaestras();
+      await obtenerSolicitudesPorAsignacion();
     } catch (error) {
       toast.warning("No se pudo conectar con el servidor");
     } finally {
@@ -235,6 +238,7 @@ export default function AutorizacionVacaciones() {
     setFiltroEstatus(hayPendientes ? "PENDIENTE" : "APROBADA");
     setPaginaActual(1);
   };
+  console.log(usuario)
 
   return (
     <main className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-10">
@@ -250,9 +254,20 @@ export default function AutorizacionVacaciones() {
                 Lista de empleados que solicitaron vacaciones.
               </p>
 
-              <p className="mt-2 text-sm font-medium text-gray-600">
-                Área: {usuario?.empleado?.area ?? "Sin área"}
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+  <span className="font-medium text-gray-600">
+    Área: {usuario?.empleado?.area ?? "Sin área"}
+  </span>
+
+  <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">
+    Bodega: {usuario?.bodega ?? "Sin bodega"}
+  </span>
+
+  <span className="rounded-full bg-blue-50 px-3 py-1 font-semibold text-blue-700">
+    Línea: {usuario?.linea ?? "Sin línea"}
+  </span>
+</div>
+
             </div>
 
             <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
