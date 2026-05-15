@@ -60,7 +60,8 @@ export default function SupervisorEmpleadosPage() {
   const [busquedaIdEmpleado, setBusquedaIdEmpleado] = useState("");
   const [cargando, setCargando] = useState(false);
   const [paginaActual, setPaginaActual] = useState(1);
-const registrosPorPagina = 5;
+
+  const registrosPorPagina = 5;
 
   const obtenerUsuarios = async () => {
     try {
@@ -82,6 +83,8 @@ const registrosPorPagina = 5;
       }
 
       setUsuarios(data);
+      setPaginaActual(1);
+      setEditandoId(null);
     } catch (error) {
       alert("No se pudo conectar con el servidor");
     } finally {
@@ -111,42 +114,62 @@ const registrosPorPagina = 5;
   };
 
   const guardarCambios = async (usuario: Usuario) => {
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/login/admin/${usuario.idempleado}/asignacion`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
-          },
-          body: JSON.stringify({
-            rol: usuario.rol,
-            subrol: usuario.subrol,
-            bodega: usuario.bodega,
-            linea: usuario.linea,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        alert(data.message || "Error al guardar cambios");
-        return;
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/login/${usuario.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          rol: usuario.rol,
+          subrol: usuario.subrol,
+          bodega: usuario.bodega,
+          linea: usuario.linea,
+        }),
       }
+    );
 
-      setEditandoId(null);
-      alert("Cambios guardados correctamente");
-      await obtenerUsuarios();
-    } catch (error) {
-      alert("No se pudo conectar con el servidor");
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.message || "Error al guardar cambios");
+      return;
     }
-  };
+
+    setEditandoId(null);
+    alert("Cambios guardados correctamente");
+    await obtenerUsuarios();
+  } catch (error) {
+    alert("No se pudo conectar con el servidor");
+  }
+};
 
   const usuariosFiltrados = usuarios.filter((usuario) =>
     usuario.idempleado.includes(busquedaIdEmpleado.trim())
   );
+
+  const totalPaginas = Math.ceil(
+    usuariosFiltrados.length / registrosPorPagina
+  );
+
+  const indiceInicial = (paginaActual - 1) * registrosPorPagina;
+  const indiceFinal = indiceInicial + registrosPorPagina;
+
+  const usuariosPaginados = usuariosFiltrados.slice(
+    indiceInicial,
+    indiceFinal
+  );
+
+  const irPaginaAnterior = () => {
+    setPaginaActual((prev) => Math.max(prev - 1, 1));
+  };
+
+  const irPaginaSiguiente = () => {
+    setPaginaActual((prev) => Math.min(prev + 1, totalPaginas));
+  };
 
   return (
     <main className="bg-gray-100 px-4 py-8 sm:px-6 lg:px-8">
@@ -188,9 +211,10 @@ const registrosPorPagina = 5;
                   type="text"
                   value={busquedaIdEmpleado}
                   maxLength={4}
-                  onChange={(e) =>
-                    setBusquedaIdEmpleado(e.target.value.replace(/\D/g, ""))
-                  }
+                  onChange={(e) => {
+                    setBusquedaIdEmpleado(e.target.value.replace(/\D/g, ""));
+                    setPaginaActual(1);
+                  }}
                   placeholder="Ej. 0004"
                   className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
                 />
@@ -209,7 +233,10 @@ const registrosPorPagina = 5;
 
                 <button
                   type="button"
-                  onClick={() => setBusquedaIdEmpleado("")}
+                  onClick={() => {
+                    setBusquedaIdEmpleado("");
+                    setPaginaActual(1);
+                  }}
                   disabled={busquedaIdEmpleado.trim() === ""}
                   className="rounded-xl border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -219,7 +246,8 @@ const registrosPorPagina = 5;
             </div>
 
             <p className="mt-3 text-sm text-gray-500">
-              Mostrando {usuariosFiltrados.length} de {usuarios.length} usuarios
+              Mostrando {usuariosPaginados.length} de{" "}
+              {usuariosFiltrados.length} usuarios
             </p>
           </div>
 
@@ -248,7 +276,7 @@ const registrosPorPagina = 5;
                     </td>
                   </tr>
                 ) : (
-                  usuariosFiltrados.map((usuario) => {
+                  usuariosPaginados.map((usuario) => {
                     const editando = editandoId === usuario.id;
 
                     return (
@@ -362,6 +390,32 @@ const registrosPorPagina = 5;
                 )}
               </tbody>
             </table>
+          </div>
+
+          <div className="flex flex-col gap-4 border-t border-gray-200 bg-white px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-gray-500">
+              Página {totalPaginas === 0 ? 0 : paginaActual} de {totalPaginas}
+            </p>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={paginaActual <= 1}
+                onClick={irPaginaAnterior}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Anterior
+              </button>
+
+              <button
+                type="button"
+                disabled={paginaActual >= totalPaginas || totalPaginas === 0}
+                onClick={irPaginaSiguiente}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Siguiente
+              </button>
+            </div>
           </div>
         </section>
       </section>
