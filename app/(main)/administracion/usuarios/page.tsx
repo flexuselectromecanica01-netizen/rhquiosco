@@ -35,6 +35,16 @@ const formularioInicial: Omit<VacacioneImport, "id"> = {
   accionsugerida: "",
 };
 
+type AreaBackend = {
+  id: number;
+  area: string;
+};
+
+type PuestoBackend = {
+  id: number;
+  puesto: string;
+};
+
 export default function ImportarVacacionesPage() {
   const inputExcelRef = useRef<HTMLInputElement | null>(null);
   const { token } = useAuth();
@@ -48,6 +58,10 @@ export default function ImportarVacacionesPage() {
   const [busquedaIdEmpleado, setBusquedaIdEmpleado] = useState("");
   const [passwordTemporal, setPasswordTemporal] = useState("");
 
+  const [areas, setAreas] = useState<AreaBackend[]>([]);
+const [puestos, setPuestos] = useState<PuestoBackend[]>([]);
+const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
+
   const [pagina, setPagina] = useState(1);
   const [limite, setLimite] = useState(5);
   const [totalPaginas, setTotalPaginas] = useState(1);
@@ -60,6 +74,49 @@ export default function ImportarVacacionesPage() {
 
   const [formulario, setFormulario] =
     useState<Omit<VacacioneImport, "id">>(formularioInicial);
+
+    const obtenerCatalogos = async () => {
+  try {
+    setCargandoCatalogos(true);
+
+    const [resAreas, resPuestos] = await Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/area`, {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
+      }),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/PUESTO`, {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
+      }),
+    ]);
+
+    const dataAreas = await resAreas.json();
+    const dataPuestos = await resPuestos.json();
+
+    if (!resAreas.ok) {
+      toast.error(dataAreas.message || "Error al obtener áreas");
+      return;
+    }
+
+    if (!resPuestos.ok) {
+      toast.error(dataPuestos.message || "Error al obtener puestos");
+      return;
+    }
+
+    setAreas(dataAreas);
+    setPuestos(dataPuestos);
+  } catch (error) {
+    toast.error("No se pudieron cargar áreas y puestos");
+  } finally {
+    setCargandoCatalogos(false);
+  }
+};
 
   const headersJson = () => {
     const headers: HeadersInit = {
@@ -138,8 +195,9 @@ const limpiarBusqueda = () => {
 };
 
   useEffect(() => {
-    obtenerEmpleados(1, 5);
-  }, []);
+  obtenerEmpleados(1, 5);
+  obtenerCatalogos();
+}, []);
 
   const formatearFechaExcel = (valor: unknown): string => {
     if (!valor) return "";
@@ -730,23 +788,25 @@ const limpiarBusqueda = () => {
                 opciones={["SEMANAL", "QUINCENAL"]}
               />
 
-              <InputTexto
-                label="Área"
-                value={formulario.area}
-                onChange={(value) =>
-                  setFormulario({ ...formulario, area: value })
-                }
-                placeholder="Sistemas"
-              />
+              <SelectTexto
+  label="Área"
+  value={formulario.area}
+  onChange={(value) =>
+    setFormulario({ ...formulario, area: value })
+  }
+  opciones={areas.map((area) => area.area)}
+  disabled={cargandoCatalogos}
+/>
 
-              <InputTexto
-                label="Puesto"
-                value={formulario.puesto}
-                onChange={(value) =>
-                  setFormulario({ ...formulario, puesto: value })
-                }
-                placeholder="Desarrollador"
-              />
+              <SelectTexto
+  label="Puesto"
+  value={formulario.puesto}
+  onChange={(value) =>
+    setFormulario({ ...formulario, puesto: value })
+  }
+  opciones={puestos.map((puesto) => puesto.puesto)}
+  disabled={cargandoCatalogos}
+/>
 
               <InputTexto
                 label="Fecha ingreso"
@@ -1364,11 +1424,13 @@ function SelectTexto({
   value,
   onChange,
   opciones,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   opciones: string[];
+  disabled?: boolean;
 }) {
   return (
     <div>

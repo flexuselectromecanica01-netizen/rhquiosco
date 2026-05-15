@@ -1,10 +1,12 @@
-"use client"
+"use client";
+
 import Link from "next/link";
-import { CalendarCheck } from "lucide-react";
+import { CalendarCheck, Users } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
 
 export default function Supervisor() {
-  const{usuario}=useAuth()
+  const { usuario } = useAuth();
+
   return (
     <main className="bg-gray-100 px-6 py-10">
       <section className="max-w-4xl mx-auto">
@@ -12,20 +14,37 @@ export default function Supervisor() {
           Supervisor
         </h1>
 
-        <Link
-          href="/supervisor/autorizacion-vacaciones"
-          className="bg-white rounded-2xl shadow-md hover:shadow-lg transition p-8 flex flex-col items-center justify-center text-center border border-gray-200 hover:border-[#009b63] group max-w-sm"
-        >
-          <CalendarCheck
-            size={48}
-            className="text-[#009b63] mb-4 group-hover:scale-110 transition"
-            strokeWidth={1.8}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <Link
+            href="/supervisor/autorizacion-vacaciones"
+            className="bg-white rounded-2xl shadow-md hover:shadow-lg transition p-8 flex flex-col items-center justify-center text-center border border-gray-200 hover:border-[#009b63] group"
+          >
+            <CalendarCheck
+              size={48}
+              className="text-[#009b63] mb-4 group-hover:scale-110 transition"
+              strokeWidth={1.8}
+            />
 
-          <span className="text-xl font-semibold text-gray-800">
-            Autorización de Vacaciones
-          </span>
-        </Link>
+            <span className="text-xl font-semibold text-gray-800">
+              Autorización de Vacaciones
+            </span>
+          </Link>
+
+          <Link
+            href="/supervisor/empleados"
+            className="bg-white rounded-2xl shadow-md hover:shadow-lg transition p-8 flex flex-col items-center justify-center text-center border border-gray-200 hover:border-[#009b63] group"
+          >
+            <Users
+              size={48}
+              className="text-[#009b63] mb-4 group-hover:scale-110 transition"
+              strokeWidth={1.8}
+            />
+
+            <span className="text-xl font-semibold text-gray-800">
+              Empleados
+            </span>
+          </Link>
+        </div>
       </section>
     </main>
   );

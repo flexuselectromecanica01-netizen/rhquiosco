@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm, SubmitHandler } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { Lock, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
