@@ -14,6 +14,7 @@ type Usuario={
     empleado:{
       accionsugerida:string
       antiguedad:number
+      turno:string
       area:string
       diasavencer:number
       diasderecho:number

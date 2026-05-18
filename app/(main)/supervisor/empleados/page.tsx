@@ -21,7 +21,8 @@ type Linea =
   | "L11"
   | "L12"
   | "L13"
-  | "L14";
+  | "L14" |
+  "CALIDAD"
 
 type Usuario = {
   id: number;
@@ -50,6 +51,7 @@ const lineas: Linea[] = [
   "L12",
   "L13",
   "L14",
+  "CALIDAD"
 ];
 
 export default function SupervisorEmpleadosPage() {
