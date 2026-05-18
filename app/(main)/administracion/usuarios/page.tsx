@@ -12,10 +12,10 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/app/context/AuthContext";
-import { VacacioneImport } from "@/src/types/vacaciones";
 import { formatearFecha } from "@/src/utils/formatearFecha";
+import { Area, Puesto, Vacacione, VacacioneFormulario, VacacioneSinTurno } from "@/src/types/schemas";
 
-const formularioInicial: Omit<VacacioneImport, "id"> = {
+const formularioInicial: VacacioneFormulario = {
   idempleado: "",
   nombre: "",
   tipoempleado: "",
@@ -35,15 +35,7 @@ const formularioInicial: Omit<VacacioneImport, "id"> = {
   accionsugerida: "",
 };
 
-type AreaBackend = {
-  id: number;
-  area: string;
-};
 
-type PuestoBackend = {
-  id: number;
-  puesto: string;
-};
 
 export default function ImportarVacacionesPage() {
   const inputExcelRef = useRef<HTMLInputElement | null>(null);
@@ -58,8 +50,8 @@ export default function ImportarVacacionesPage() {
   const [busquedaIdEmpleado, setBusquedaIdEmpleado] = useState("");
   const [passwordTemporal, setPasswordTemporal] = useState("");
 
-  const [areas, setAreas] = useState<AreaBackend[]>([]);
-const [puestos, setPuestos] = useState<PuestoBackend[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
+const [puestos, setPuestos] = useState<Puesto[]>([]);
 const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
 
   const [pagina, setPagina] = useState(1);
@@ -67,13 +59,13 @@ const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
   const [totalPaginas, setTotalPaginas] = useState(1);
   const [totalRegistros, setTotalRegistros] = useState(0);
 
-  const [empleados, setEmpleados] = useState<VacacioneImport[]>([]);
+  const [empleados, setEmpleados] = useState<VacacioneSinTurno[]>([]);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [cargando, setCargando] = useState(false);
   const [guardando, setGuardando] = useState(false);
 
   const [formulario, setFormulario] =
-    useState<Omit<VacacioneImport, "id">>(formularioInicial);
+    useState<VacacioneFormulario>(formularioInicial);
 
     const obtenerCatalogos = async () => {
   try {
@@ -391,7 +383,7 @@ const limpiarBusqueda = () => {
         defval: "",
       });
 
-      const empleadosImportados: VacacioneImport[] = datos.map(
+      const empleadosImportados: VacacioneSinTurno[] = datos.map(
         (fila, index) => {
           const idempleado = String(
             obtenerValor(fila, ["idempleado", "ID empleado", "IdEmpleado"], "")
@@ -405,7 +397,7 @@ const limpiarBusqueda = () => {
             nombre: String(obtenerValor(fila, ["nombre", "Nombre"], "")).trim(),
             tipoempleado: String(
               obtenerValor(fila, ["tipoempleado", "Tipo empleado"], "")
-            ).trim() as VacacioneImport["tipoempleado"],
+            ).trim() as Vacacione["tipoempleado"],
             area: String(
               obtenerValor(fila, ["area", "Área", "Area"], "")
             ).trim(),
@@ -429,7 +421,7 @@ const limpiarBusqueda = () => {
             fincicloactual: formatearFechaExcel(
               obtenerValor(fila, ["fincicloactual", "Fin ciclo actual"], "")
             ),
-            proporcionaldevengado: String(
+            proporcionaldevengado: Number(
               obtenerValor(
                 fila,
                 ["proporcionaldevengado", "Proporcional devengado"],
@@ -439,7 +431,7 @@ const limpiarBusqueda = () => {
             diastomados: Number(
               obtenerValor(fila, ["diastomados", "Días tomados"], 0)
             ),
-            saldodisponible: String(
+            saldodisponible: Number(
               obtenerValor(
                 fila,
                 ["saldodisponible", "Saldo disponible"],
@@ -454,7 +446,7 @@ const limpiarBusqueda = () => {
             ),
             semaforo: String(
               obtenerValor(fila, ["semaforo", "Semaforo", "Semáforo"], "")
-            ).trim() as VacacioneImport["semaforo"],
+            ).trim() as Vacacione["semaforo"],
             accionsugerida: String(
               obtenerValor(fila, ["accionsugerida", "Acción sugerida"], "")
             ).trim(),
@@ -533,16 +525,19 @@ const limpiarBusqueda = () => {
         }
       }
 
-      setEmpleados((prev) =>
-        prev.map((empleado) =>
-          empleado.id === editandoId
-            ? {
-                id: editandoId,
-                ...formulario,
-              }
-            : empleado
-        )
-      );
+      setEmpleados((prev: VacacioneSinTurno[]) =>
+  prev.map((empleado) =>
+    empleado.id === editandoId
+      ? {
+          ...empleado,
+          ...formulario,
+          id: editandoId,
+          proporcionaldevengado: Number(formulario.proporcionaldevengado),
+          saldodisponible:Number(formulario.saldodisponible)
+        }
+      : empleado
+  )
+);
 
       toast.success("Registro actualizado localmente");
       limpiarFormulario();
@@ -571,18 +566,22 @@ const limpiarBusqueda = () => {
     }
   };
 
-  const editarEmpleado = async (empleado: VacacioneImport) => {
+  const editarEmpleado = async (empleado: VacacioneSinTurno) => {
     if (!empleado.id) return;
 
     setEditandoId(empleado.id);
 
     const { id, ...datosFormulario } = empleado;
-    setFormulario(datosFormulario);
+  setFormulario({
+  ...datosFormulario,
+  proporcionaldevengado: String(datosFormulario.proporcionaldevengado),
+  saldodisponible:String(formulario.saldodisponible)
+});
 
     await obtenerDetalleEmpleado(empleado.id);
   };
 
-  const eliminarEmpleado = async (empleado: VacacioneImport) => {
+  const eliminarEmpleado = async (empleado: VacacioneSinTurno) => {
     if (!empleado.id) return;
 
     if(empleado.idempleado==="0001"){
@@ -782,7 +781,7 @@ const limpiarBusqueda = () => {
                 onChange={(value) =>
                   setFormulario({
                     ...formulario,
-                    tipoempleado: value as VacacioneImport["tipoempleado"],
+                    tipoempleado: value as Vacacione["tipoempleado"],
                   })
                 }
                 opciones={["SEMANAL", "QUINCENAL"]}
@@ -853,7 +852,7 @@ const limpiarBusqueda = () => {
 
               <InputTexto
                 label="Proporcional devengado"
-                value={formulario.proporcionaldevengado}
+                value={(formulario.proporcionaldevengado)}
                 onChange={(value) =>
                   setFormulario({
                     ...formulario,
@@ -901,7 +900,7 @@ const limpiarBusqueda = () => {
                 onChange={(value) =>
                   setFormulario({
                     ...formulario,
-                    semaforo: value as VacacioneImport["semaforo"],
+                    semaforo: value as Vacacione["semaforo"],
                   })
                 }
                 opciones={["CONTROLADO", "ATENCION", "SINSALDO"]}

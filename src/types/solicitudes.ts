@@ -1,3 +1,5 @@
+import { Solicitud } from "./schemas";
+
 export type SolicitudDetalle = {
   id: number;
   fechainicio: string;
@@ -23,15 +25,7 @@ export type SolicitudDetalle = {
 };
 
 
-export type Solicitud = {
-  id: number;
-  fechainicio: string;
-  fechatermino: string;
-  diastotales: number;
-  estatus: string;
-  motivorechazo: string | null;
-   fechacreacion: string;
-};
+
 
 export type EmpleadoVacaciones = {
   id: number;
