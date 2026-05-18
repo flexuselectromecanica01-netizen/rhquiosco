@@ -250,9 +250,22 @@ export default function AutorizacionVacaciones() {
                 Lista de empleados que solicitaron vacaciones.
               </p>
 
-              <p className="mt-2 text-sm font-medium text-gray-600">
-                Área: {usuario?.empleado?.area ?? "Sin área"}
-              </p>
+              <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+    <span className="text-gray-700">
+      Área:{" "}
+      <span className="font-semibold text-gray-900">
+        {usuario?.empleado?.area ?? "Sin área"}
+      </span>
+    </span>
+
+    <span className="rounded-full bg-emerald-50 px-4 py-1.5 font-semibold text-emerald-700">
+      Bodega: {usuario?.bodega ?? "Sin bodega"}
+    </span>
+
+    <span className="rounded-full bg-blue-50 px-4 py-1.5 font-semibold text-blue-700">
+      Línea: {usuario?.linea ?? "Sin línea"}
+    </span>
+  </div>
             </div>
 
             <div className="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">

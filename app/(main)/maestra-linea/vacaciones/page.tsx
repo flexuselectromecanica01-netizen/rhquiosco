@@ -4,6 +4,8 @@ import { useAuth } from "@/app/context/AuthContext";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import DatePicker, { registerLocale } from "react-datepicker";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+
 import { es } from "date-fns/locale/es";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -11,6 +13,34 @@ import "react-datepicker/dist/react-datepicker.css";
 import { formatearFecha } from "@/src/utils/formatearFecha";
 
 registerLocale("es", es);
+
+type Solicitud = {
+  id: number;
+  fechainicio: string;
+  fechatermino: string;
+  diastotales: number;
+  estatus: string;
+  motivorechazo?: string | null;
+  empleado:{
+      id?: number;
+      idempleado: string;
+      nombre: string;
+      area: string;
+      puesto: string;
+      fechaingreso: string;
+      antiguedad: number;
+      diasderecho: number;
+      iniciocicloactual: string;
+      fincicloactual: string;
+      proporcionaldevengado: string;
+      diastomados: number;
+      saldodisponible: string;
+      diasporvencer: number;
+      diasavencer: number;
+      accionsugerida: string;
+  }
+};
+
 
 export default function Vacaciones() {
   const { usuario } = useAuth();
@@ -23,6 +53,45 @@ export default function Vacaciones() {
 
   const [fechaInicio, setFechaInicio] = useState("");
   const [fechaTermino, setFechaTermino] = useState("");
+
+  const obtenerSiguienteDiaHabil = (
+  fecha: string,
+  festivos: string[] = diasFestivos
+) => {
+  const crearFechaLocal = (fechaString: string) => {
+    const [year, month, day] = fechaString.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  };
+
+  const formatearFechaISO = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  };
+
+  const esDiaHabil = (date: Date) => {
+    const diaSemana = date.getDay();
+    const fechaISO = formatearFechaISO(date);
+
+    const esSabado = diaSemana === 6;
+    const esDomingo = diaSemana === 0;
+    const esFestivo = festivos.includes(fechaISO);
+
+    return !esSabado && !esDomingo && !esFestivo;
+  };
+
+  const siguienteDia = crearFechaLocal(fecha);
+
+  siguienteDia.setDate(siguienteDia.getDate() + 1);
+
+  while (!esDiaHabil(siguienteDia)) {
+    siguienteDia.setDate(siguienteDia.getDate() + 1);
+  }
+
+  return formatearFechaISO(siguienteDia);
+};
   
   const diasFestivos = [
     "2026-01-01",
@@ -38,6 +107,185 @@ export default function Vacaciones() {
     const [year, month, day] = fecha.split("-").map(Number);
     return new Date(year, month - 1, day);
   };
+
+
+  const generarPdfSolicitud = async (solicitud: Solicitud) => {
+    try {
+      if (solicitud.estatus !== "APROBADA") {
+        alert("Solo se puede imprimir una solicitud aprobada.");
+        return;
+      }
+  
+      const empleado = usuario?.empleado;
+  
+      if (!empleado) {
+        alert("No se encontró información del empleado.");
+        return;
+      }
+  
+      // PDF que tienes dentro de la carpeta public
+      const existingPdfBytes = await fetch(
+        "/FORMATO%20DE%20VACACIONES.pdf"
+      ).then((res) => {
+        if (!res.ok) {
+          throw new Error("No se pudo cargar el formato PDF.");
+        }
+  
+        return res.arrayBuffer();
+      });
+  
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+  
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+      const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  
+      const pages = pdfDoc.getPages();
+      const page = pages[0];
+  
+      const drawText = (
+        value: string | number | null | undefined,
+        x: number,
+        y: number,
+        size = 8,
+        bold = false
+      ) => {
+        page.drawText(String(value ?? ""), {
+          x,
+          y,
+          size,
+          font: bold ? boldFont : font,
+          color: rgb(0, 0, 0),
+        });
+      };
+  
+      const calcularSaldoRestante = () => {
+        const saldoDisponible = Number(empleado.saldodisponible ?? 0);
+        const diasSolicitados = Number(solicitud.diastotales ?? 0);
+  
+        if (Number.isNaN(saldoDisponible) || Number.isNaN(diasSolicitados)) {
+          return "";
+        }
+  
+        return saldoDisponible - diasSolicitados;
+      };
+  
+      const saldoRestante = calcularSaldoRestante();
+  
+      // =====================================================
+      // DATOS DEL COLABORADOR
+      // Ajusta X y Y si algún texto no cae exactamente.
+      // X = izquierda / derecha
+      // Y = arriba / abajo
+      // =====================================================
+      drawText(solicitud.id, 455, 682);
+      drawText(empleado.nombre, 187, 645);
+      drawText(empleado.puesto, 187, 628);
+      drawText(formatearFecha(empleado.fechaingreso), 455, 628);
+      drawText(empleado.idempleado, 187, 611);
+      drawText(empleado.turno, 455, 611);
+  
+      const fechaRegreso = obtenerSiguienteDiaHabil(solicitud.fechatermino);
+  
+  drawText(formatearFecha(fechaRegreso), 187, 160);
+  drawText(formatearFecha(fechaRegreso), 187, 525);
+  
+      // =====================================================
+      // DATOS DE VACACIONES
+      // =====================================================
+  
+      drawText(empleado.antiguedad, 187, 572);
+      drawText(empleado.saldodisponible, 186, 556);
+  
+      drawText(solicitud.diastotales, 450, 555);
+  
+      drawText(formatearFecha(solicitud.fechainicio), 186, 540);
+      drawText(formatearFecha(solicitud.fechatermino), 450, 540);
+  
+      // Si tienes fecha de regreso a labores en tu API, ponla aquí.
+      // Por ahora la dejamos vacía.
+      drawText("", 180, 490);
+  
+      // =====================================================
+      // CONTROL
+      // =====================================================
+  
+      drawText(empleado.diasderecho, 187, 486);
+      drawText(solicitud.diastotales, 187, 469);
+      drawText(solicitud.diastotales, 450, 485);
+          drawText(solicitud.empleado.saldodisponible, 450, 469);
+  
+      
+  
+  
+      // Vigentes hasta el
+      drawText(formatearFecha(empleado.fincicloactual) ?? "", 187, 453);
+  
+      // =====================================================
+      // CONFORMIDAD
+      // =====================================================
+  
+      drawText(empleado.nombre, 187, 392);
+  
+      // Fecha de firma, puedes usar la fecha actual
+      const fechaActual = new Date().toLocaleDateString("es-MX", {
+        day:"2-digit",
+          month: "long",
+      year: "numeric",
+      });
+  
+      drawText(fechaActual, 430, 376);
+  
+      // =====================================================
+      // ACUSE DE RECIBO
+      // =====================================================
+  
+      drawText(empleado.nombre, 187, 190);
+      drawText(empleado.antiguedad, 452 , 190);
+  
+      drawText(formatearFecha(solicitud.fechainicio), 187, 175);
+      drawText(formatearFecha(solicitud.fechatermino), 450, 175);
+  
+      // Fecha regreso a labores
+      drawText("", 180, 215);
+      drawText(solicitud.id, 455, 220);
+  
+  
+      drawText(empleado.saldodisponible, 450, 160);
+  
+      // Vigentes hasta el
+      drawText(formatearFecha(empleado.fincicloactual) ?? "", 187, 144);
+  
+      // =====================================================
+      // GENERAR Y DESCARGAR PDF
+      // =====================================================
+  
+      const pdfBytes = await pdfDoc.save();
+  
+      // Solución al error de TypeScript con BlobPart
+      const buffer = new ArrayBuffer(pdfBytes.length);
+      const view = new Uint8Array(buffer);
+      view.set(pdfBytes);
+  
+      const blob = new Blob([buffer], {
+        type: "application/pdf",
+      });
+  
+      const blobUrl = URL.createObjectURL(blob);
+  
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `vacaciones_${empleado.idempleado}_${solicitud.id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error(error);
+      alert("Ocurrió un error al generar el PDF.");
+    }
+  };
+  
 
   const generarPdfSolicitudes = () => {
   if (!usuario?.empleado) {
@@ -372,6 +620,22 @@ export default function Vacaciones() {
           <h1 className="mb-2 text-2xl font-bold text-gray-800 sm:text-3xl">
             Mis Vacaciones
           </h1>
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+    <span className="text-gray-700">
+      Área:{" "}
+      <span className="font-semibold text-gray-900">
+        {usuario?.empleado?.area ?? "Sin área"}
+      </span>
+    </span>
+
+    <span className="rounded-full bg-emerald-50 px-4 py-1.5 font-semibold text-emerald-700">
+      Bodega: {usuario?.bodega ?? "Sin bodega"}
+    </span>
+
+    <span className="rounded-full bg-blue-50 px-4 py-1.5 font-semibold text-blue-700">
+      Línea: {usuario?.linea ?? "Sin línea"}
+    </span>
+  </div>
 
           <div className="h-1 w-12 bg-emerald-600"></div>
 
@@ -669,64 +933,74 @@ export default function Vacaciones() {
             ) : (
               <div className="mt-6 space-y-4">
                 {solicitudes.map((solicitud) => (
-                  <div
-                    key={solicitud.id}
-                    className="rounded-xl border border-gray-200 bg-gray-50 p-4"
-                  >
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                      <div>
-                        <p className="text-sm text-gray-500">Fecha inicio</p>
-                        <p className="font-semibold text-gray-800">
-                          {formatearFecha(solicitud.fechainicio)}
-                        </p>
-                      </div>
+  <div
+    key={solicitud.id}
+    className="rounded-xl border border-gray-200 bg-gray-50 p-4"
+  >
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div>
+        <p className="text-sm text-gray-500">Fecha inicio</p>
+        <p className="font-semibold text-gray-800">
+          {formatearFecha(solicitud.fechainicio)}
+        </p>
+      </div>
 
-                      <div>
-                        <p className="text-sm text-gray-500">Fecha término</p>
-                        <p className="font-semibold text-gray-800">
-                          {formatearFecha(solicitud.fechatermino)}
-                        </p>
-                      </div>
+      <div>
+        <p className="text-sm text-gray-500">Fecha término</p>
+        <p className="font-semibold text-gray-800">
+          {formatearFecha(solicitud.fechatermino)}
+        </p>
+      </div>
 
-                      <div>
-                        <p className="text-sm text-gray-500">Días totales</p>
-                        <p className="font-semibold text-gray-800">
-                          {solicitud.diastotales}
-                        </p>
-                      </div>
+      <div>
+        <p className="text-sm text-gray-500">Días totales</p>
+        <p className="font-semibold text-gray-800">
+          {solicitud.diastotales}
+        </p>
+      </div>
 
-                      <div>
-                        <p className="text-sm text-gray-500">Estatus</p>
-                        <p className="font-semibold text-emerald-700">
-                          {solicitud.estatus}
-                        </p>
-                      </div>
-                    </div>
+      <div>
+        <p className="text-sm text-gray-500">Estatus</p>
+        <p
+          className={`font-semibold ${
+            solicitud.estatus === "APROBADA"
+              ? "text-emerald-700"
+              : solicitud.estatus === "RECHAZADA"
+              ? "text-red-700"
+              : "text-yellow-700"
+          }`}
+        >
+          {solicitud.estatus}
+        </p>
+      </div>
+    </div>
 
-                    {solicitud.motivorechazo && (
-                      <div className="mt-4 rounded-lg bg-red-50 p-3">
-                        <p className="text-sm text-red-600">
-                          Motivo de rechazo
-                        </p>
-                        <p className="font-medium text-red-700">
-                          {solicitud.motivorechazo}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ))}
+    {solicitud.motivorechazo && (
+      <div className="mt-4 rounded-lg bg-red-50 p-3">
+        <p className="text-sm text-red-600">Motivo de rechazo</p>
+        <p className="font-medium text-red-700">
+          {solicitud.motivorechazo}
+        </p>
+      </div>
+    )}
+
+    {solicitud.estatus === "APROBADA" && (
+      <div className="mt-4 flex justify-end">
+        <button
+          type="button"
+          onClick={() => generarPdfSolicitud(solicitud)}
+          className="cursor-pointer rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition hover:bg-gray-700 active:scale-95"
+        >
+          Descargar PDF
+        </button>
+      </div>
+    )}
+  </div>
+))}
               </div>
             )}
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-  <button
-    type="button"
-    onClick={generarPdfSolicitudes}
-    disabled={cargandoSolicitudes || solicitudes.length === 0}
-    className="cursor-pointer rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition hover:bg-gray-700 active:scale-95 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
-  >
-    Descargar PDF
-  </button>
 
   <button
     type="button"
