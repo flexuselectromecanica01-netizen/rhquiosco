@@ -1,7 +1,7 @@
 import { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { SubmitHandler } from "react-hook-form";
 import { toast } from "react-toastify";
-import { LoginForm } from "../types/solicitudes";
+import { LoginForm } from "../types/schemas";
 
 type LoginFunction=(token:string)=>Promise<void> | void
 
