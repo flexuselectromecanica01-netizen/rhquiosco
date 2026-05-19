@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import * as XLSX from "xlsx";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Upload,
-  Save,
-  RefreshCw,
-} from "lucide-react";
+import { useEffect, useState } from "react";
+import { Plus, Pencil, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "react-toastify";
 import { useAuth } from "@/app/context/AuthContext";
 import { formatearFecha } from "@/src/utils/formatearFecha";
-import { Area, Puesto, Vacacione, VacacioneFormulario, VacacioneSinTurno } from "@/src/types/schemas";
+import {
+  Area,
+  Puesto,
+  Vacacione,
+  VacacioneFormulario,
+  VacacioneSinTurno,
+} from "@/src/types/schemas";
 
 const formularioInicial: VacacioneFormulario = {
   idempleado: "",
@@ -35,167 +33,21 @@ const formularioInicial: VacacioneFormulario = {
   accionsugerida: "",
 };
 
-const crearFechaLocal = (fecha: string) => {
-  const [year, month, day] = fecha.split("-").map(Number);
-  return new Date(year, month - 1, day);
-};
+const normalizarFechaInput = (fecha: string | Date | null | undefined) => {
+  if (!fecha) return "";
 
-const formatearFechaInput = (fecha: Date) => {
-  const year = fecha.getFullYear();
-  const month = String(fecha.getMonth() + 1).padStart(2, "0");
-  const day = String(fecha.getDate()).padStart(2, "0");
+  if (fecha instanceof Date) {
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, "0");
+    const day = String(fecha.getDate()).padStart(2, "0");
 
-  return `${year}-${month}-${day}`;
-};
-
-const sumarMeses = (fecha: Date, meses: number) => {
-  const nuevaFecha = new Date(fecha);
-  nuevaFecha.setMonth(nuevaFecha.getMonth() + meses);
-  return nuevaFecha;
-};
-
-const sumarAnios = (fecha: Date, anios: number) => {
-  const nuevaFecha = new Date(fecha);
-  nuevaFecha.setFullYear(nuevaFecha.getFullYear() + anios);
-  return nuevaFecha;
-};
-
-const calcularDiasVacacionesLey = (antiguedad: number) => {
-  if (antiguedad <= 0) return 0;
-
-  if (antiguedad === 1) return 12;
-  if (antiguedad === 2) return 14;
-  if (antiguedad === 3) return 16;
-  if (antiguedad === 4) return 18;
-  if (antiguedad === 5) return 20;
-
-  if (antiguedad >= 6 && antiguedad <= 10) return 22;
-  if (antiguedad >= 11 && antiguedad <= 15) return 24;
-  if (antiguedad >= 16 && antiguedad <= 20) return 26;
-  if (antiguedad >= 21 && antiguedad <= 25) return 28;
-  if (antiguedad >= 26 && antiguedad <= 30) return 30;
-  if (antiguedad >= 31 && antiguedad <= 35) return 32;
-
-  return 32;
-};
-
-const calcularAntiguedad = (fechaIngreso: string, hoy = new Date()) => {
-  const ingreso = crearFechaLocal(fechaIngreso);
-
-  let antiguedad = hoy.getFullYear() - ingreso.getFullYear();
-
-  const aniversarioEsteAnio = new Date(
-    hoy.getFullYear(),
-    ingreso.getMonth(),
-    ingreso.getDate()
-  );
-
-  if (hoy < aniversarioEsteAnio) {
-    antiguedad--;
+    return `${year}-${month}-${day}`;
   }
 
-  return Math.max(antiguedad, 0);
+  return String(fecha).split("T")[0];
 };
-
-const calcularMesesTranscurridos = (inicio: Date, hoy = new Date()) => {
-  let meses =
-    (hoy.getFullYear() - inicio.getFullYear()) * 12 +
-    (hoy.getMonth() - inicio.getMonth());
-
-  if (hoy.getDate() < inicio.getDate()) {
-    meses--;
-  }
-
-  return Math.max(meses, 0);
-};
-
-const calcularDiasEntreFechas = (desde: Date, hasta: Date) => {
-  const inicio = new Date(
-    desde.getFullYear(),
-    desde.getMonth(),
-    desde.getDate()
-  );
-
-  const fin = new Date(
-    hasta.getFullYear(),
-    hasta.getMonth(),
-    hasta.getDate()
-  );
-
-  const diferencia = fin.getTime() - inicio.getTime();
-
-  return Math.max(Math.ceil(diferencia / (1000 * 60 * 60 * 24)), 0);
-};
-
-const calcularSemaforo = (saldoDisponible: number) => {
-  if (saldoDisponible <= 0) return "SINSALDO";
-  if (saldoDisponible <= 3) return "ATENCION";
-  return "CONTROLADO";
-};
-
-const calcularVacacionesPorFechaIngreso = (fechaIngreso: string) => {
-  if (!fechaIngreso) {
-    return {
-      antiguedad: 0,
-      diasderecho: 0,
-      iniciocicloactual: "",
-      fincicloactual: "",
-      proporcionaldevengado: "0.00",
-      saldodisponible: "0.00",
-      diasporvencer: 0,
-      diasavencer: 0,
-      semaforo: "",
-    };
-  }
-
-  const ingreso = crearFechaLocal(fechaIngreso);
-  const hoy = new Date();
-
-  const fechaSeisMeses = sumarMeses(ingreso, 6);
-  const antiguedad = calcularAntiguedad(fechaIngreso, hoy);
-
-  let diasderecho = 0;
-  let inicioCiclo: Date;
-  let finCiclo: Date;
-
-  if (hoy < fechaSeisMeses) {
-    diasderecho = 0;
-    inicioCiclo = fechaSeisMeses;
-    finCiclo = sumarMeses(inicioCiclo, 4);
-  } else if (antiguedad < 1) {
-    diasderecho = 6;
-    inicioCiclo = fechaSeisMeses;
-    finCiclo = sumarMeses(inicioCiclo, 4);
-  } else {
-    diasderecho = calcularDiasVacacionesLey(antiguedad);
-    inicioCiclo = sumarAnios(ingreso, antiguedad);
-    finCiclo = sumarMeses(inicioCiclo, 5);
-  }
-
-  const proporcionaldevengado = calcularMesesTranscurridos(inicioCiclo, hoy);
-
-  const saldoDisponible = diasderecho;
-  const diasPorVencer = saldoDisponible;
-  const diasAVencer = calcularDiasEntreFechas(hoy, finCiclo);
-  const semaforo = calcularSemaforo(saldoDisponible);
-
-  return {
-    antiguedad,
-    diasderecho,
-    iniciocicloactual: formatearFechaInput(inicioCiclo),
-    fincicloactual: formatearFechaInput(finCiclo),
-    proporcionaldevengado: proporcionaldevengado.toFixed(2),
-    saldodisponible: saldoDisponible.toFixed(2),
-    diasporvencer: diasPorVencer,
-    diasavencer: diasAVencer,
-    semaforo,
-  };
-};
-
-
 
 export default function ImportarVacacionesPage() {
-  const inputExcelRef = useRef<HTMLInputElement | null>(null);
   const { token } = useAuth();
 
   const [detalleEmpleado, setDetalleEmpleado] = useState<any | null>(null);
@@ -208,8 +60,8 @@ export default function ImportarVacacionesPage() {
   const [passwordTemporal, setPasswordTemporal] = useState("");
 
   const [areas, setAreas] = useState<Area[]>([]);
-const [puestos, setPuestos] = useState<Puesto[]>([]);
-const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
+  const [puestos, setPuestos] = useState<Puesto[]>([]);
+  const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
 
   const [pagina, setPagina] = useState(1);
   const [limite, setLimite] = useState(5);
@@ -219,53 +71,9 @@ const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
   const [empleados, setEmpleados] = useState<VacacioneSinTurno[]>([]);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [cargando, setCargando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
 
   const [formulario, setFormulario] =
     useState<VacacioneFormulario>(formularioInicial);
-
-    const obtenerCatalogos = async () => {
-  try {
-    setCargandoCatalogos(true);
-
-    const [resAreas, resPuestos] = await Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/area`, {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : undefined,
-      }),
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/PUESTO`, {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : undefined,
-      }),
-    ]);
-
-    const dataAreas = await resAreas.json();
-    const dataPuestos = await resPuestos.json();
-
-    if (!resAreas.ok) {
-      toast.error(dataAreas.message || "Error al obtener áreas");
-      return;
-    }
-
-    if (!resPuestos.ok) {
-      toast.error(dataPuestos.message || "Error al obtener puestos");
-      return;
-    }
-
-    setAreas(dataAreas);
-    setPuestos(dataPuestos);
-  } catch (error) {
-    toast.error("No se pudieron cargar áreas y puestos");
-  } finally {
-    setCargandoCatalogos(false);
-  }
-};
 
   const headersJson = () => {
     const headers: HeadersInit = {
@@ -279,6 +87,49 @@ const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
     return headers;
   };
 
+  const obtenerCatalogos = async () => {
+    try {
+      setCargandoCatalogos(true);
+
+      const [resAreas, resPuestos] = await Promise.all([
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/area`, {
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined,
+        }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/PUESTO`, {
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined,
+        }),
+      ]);
+
+      const dataAreas = await resAreas.json();
+      const dataPuestos = await resPuestos.json();
+
+      if (!resAreas.ok) {
+        toast.error(dataAreas.message || "Error al obtener áreas");
+        return;
+      }
+
+      if (!resPuestos.ok) {
+        toast.error(dataPuestos.message || "Error al obtener puestos");
+        return;
+      }
+
+      setAreas(dataAreas);
+      setPuestos(dataPuestos);
+    } catch (error) {
+      toast.error("No se pudieron cargar áreas y puestos");
+    } finally {
+      setCargandoCatalogos(false);
+    }
+  };
+
   const limpiarFormulario = () => {
     setFormulario(formularioInicial);
     setEditandoId(null);
@@ -288,124 +139,100 @@ const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
   };
 
   const obtenerEmpleados = async (
-  page = pagina,
-  limit = limite,
-  idempleado = busquedaIdEmpleado
-) => {
-  try {
-    setCargando(true);
+    page = pagina,
+    limit = limite,
+    idempleado = busquedaIdEmpleado
+  ) => {
+    try {
+      setCargando(true);
 
-    // 1. Primero recalcula ciclos en backend
-    const resRecalcular = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/recalcular-ciclos`,
-      {
-        method: "PATCH",
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : undefined,
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(limit),
+      });
+
+      if (idempleado.trim() !== "") {
+        params.append("idempleado", idempleado.trim());
       }
-    );
 
-    const dataRecalcular = await resRecalcular.json();
+      const res = await fetch(
+        `${
+          process.env.NEXT_PUBLIC_API_URL
+        }/vacaciones/paginado?${params.toString()}`,
+        {
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined,
+        }
+      );
 
-    if (!resRecalcular.ok) {
-      toast.error(dataRecalcular.message || "Error al recalcular vacaciones");
-      return;
-    }
+      const result = await res.json();
 
-    // 2. Después obtiene empleados actualizados
-    const params = new URLSearchParams({
-      page: String(page),
-      limit: String(limit),
-    });
-
-    if (idempleado.trim() !== "") {
-      params.append("idempleado", idempleado.trim());
-    }
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/paginado?${params.toString()}`,
-      {
-        headers: token
-          ? {
-              Authorization: `Bearer ${token}`,
-            }
-          : undefined,
+      if (!res.ok) {
+        toast.error(result.message || "Error al obtener empleados");
+        return;
       }
-    );
 
-    const result = await res.json();
-
-    if (!res.ok) {
-      toast.error(result.message || "Error al obtener empleados");
-      return;
+      setEmpleados(result.data);
+      setPagina(result.meta.page);
+      setLimite(result.meta.limit);
+      setTotalPaginas(result.meta.totalPages);
+      setTotalRegistros(result.meta.total);
+    } catch (error) {
+      toast.error("No se pudo conectar con el servidor");
+    } finally {
+      setCargando(false);
     }
+  };
 
-    setEmpleados(result.data);
-    setPagina(result.meta.page);
-    setLimite(result.meta.limit);
-    setTotalPaginas(result.meta.totalPages);
-    setTotalRegistros(result.meta.total);
+  const actualizarVacaciones = async () => {
+    try {
+      setCargando(true);
 
-    toast.success("Vacaciones actualizadas correctamente");
-  } catch (error) {
-    toast.error("No se pudo conectar con el servidor");
-  } finally {
-    setCargando(false);
-  }
-};
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/recalcular-ciclos`,
+        {
+          method: "PATCH",
+          headers: token
+            ? {
+                Authorization: `Bearer ${token}`,
+              }
+            : undefined,
+        }
+      );
 
-const buscarPorIdEmpleado = () => {
-  obtenerEmpleados(1, limite, busquedaIdEmpleado);
-};
+      const data = await res.json();
 
-const limpiarBusqueda = () => {
-  setBusquedaIdEmpleado("");
-  obtenerEmpleados(1, limite, "");
-};
+      if (!res.ok) {
+        toast.error(data.message || "Error al actualizar vacaciones");
+        return;
+      }
+
+      await obtenerEmpleados(pagina, limite, busquedaIdEmpleado);
+
+      toast.success("Vacaciones actualizadas correctamente");
+    } catch (error) {
+      toast.error("No se pudo conectar con el servidor");
+    } finally {
+      setCargando(false);
+    }
+  };
+
+  const buscarPorIdEmpleado = () => {
+    obtenerEmpleados(1, limite, busquedaIdEmpleado);
+  };
+
+  const limpiarBusqueda = () => {
+    setBusquedaIdEmpleado("");
+    obtenerEmpleados(1, limite, "");
+  };
 
   useEffect(() => {
-  obtenerEmpleados(1, 5);
-  obtenerCatalogos();
-}, []);
-
-  const formatearFechaExcel = (valor: unknown): string => {
-    if (!valor) return "";
-
-    if (valor instanceof Date) {
-      return valor.toISOString().split("T")[0];
-    }
-
-    if (typeof valor === "number") {
-      const fecha = XLSX.SSF.parse_date_code(valor);
-
-      if (!fecha) return "";
-
-      const year = fecha.y;
-      const month = String(fecha.m).padStart(2, "0");
-      const day = String(fecha.d).padStart(2, "0");
-
-      return `${year}-${month}-${day}`;
-    }
-
-    return String(valor).trim();
-  };
-
-  const obtenerValor = (
-    fila: Record<string, any>,
-    claves: string[],
-    valorDefault: any = ""
-  ) => {
-    for (const clave of claves) {
-      if (fila[clave] !== undefined && fila[clave] !== null) {
-        return fila[clave];
-      }
-    }
-
-    return valorDefault;
-  };
+    obtenerEmpleados(1, 5);
+    obtenerCatalogos();
+  }, []);
 
   const obtenerDetalleEmpleado = async (id: number) => {
     try {
@@ -538,110 +365,6 @@ const limpiarBusqueda = () => {
     }
   };
 
-  const importarExcel = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const archivo = event.target.files?.[0];
-
-    if (!archivo) return;
-
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      const data = e.target?.result;
-
-      const workbook = XLSX.read(data, {
-        type: "binary",
-        cellDates: true,
-      });
-
-      const hojaNombre = workbook.SheetNames.includes("Vacaciones")
-        ? "Vacaciones"
-        : workbook.SheetNames[0];
-
-      const hoja = workbook.Sheets[hojaNombre];
-
-      const datos = XLSX.utils.sheet_to_json<Record<string, any>>(hoja, {
-        defval: "",
-      });
-
-      const empleadosImportados: VacacioneSinTurno[] = datos.map(
-        (fila, index) => {
-          const idempleado = String(
-            obtenerValor(fila, ["idempleado", "ID empleado", "IdEmpleado"], "")
-          )
-            .trim()
-            .padStart(4, "0");
-
-          return {
-            id: Date.now() + index,
-            idempleado,
-            nombre: String(obtenerValor(fila, ["nombre", "Nombre"], "")).trim(),
-            tipoempleado: String(
-              obtenerValor(fila, ["tipoempleado", "Tipo empleado"], "")
-            ).trim() as Vacacione["tipoempleado"],
-            area: String(
-              obtenerValor(fila, ["area", "Área", "Area"], "")
-            ).trim(),
-            puesto: String(obtenerValor(fila, ["puesto", "Puesto"], "")).trim(),
-            fechaingreso: formatearFechaExcel(
-              obtenerValor(fila, ["fechaingreso", "Fecha ingreso"], "")
-            ),
-            antiguedad: Number(
-              obtenerValor(fila, ["antiguedad", "Antiguedad", "Antigüedad"], 0)
-            ),
-            diasderecho: Number(
-              obtenerValor(fila, ["diasderecho", "Días derecho"], 0)
-            ),
-            iniciocicloactual: formatearFechaExcel(
-              obtenerValor(
-                fila,
-                ["iniciocicloactual", "Inicio ciclo actual"],
-                ""
-              )
-            ),
-            fincicloactual: formatearFechaExcel(
-              obtenerValor(fila, ["fincicloactual", "Fin ciclo actual"], "")
-            ),
-            proporcionaldevengado: Number(
-              obtenerValor(
-                fila,
-                ["proporcionaldevengado", "Proporcional devengado"],
-                "0.00"
-              )
-            ),
-            diastomados: Number(
-              obtenerValor(fila, ["diastomados", "Días tomados"], 0)
-            ),
-            saldodisponible: Number(
-              obtenerValor(
-                fila,
-                ["saldodisponible", "Saldo disponible"],
-                "0.00"
-              )
-            ),
-            diasporvencer: Number(
-              obtenerValor(fila, ["diasporvencer", "Días por vencer"], 0)
-            ),
-            diasavencer: Number(
-              obtenerValor(fila, ["diasavencer", "Días a vencer"], 0)
-            ),
-            semaforo: String(
-              obtenerValor(fila, ["semaforo", "Semaforo", "Semáforo"], "")
-            ).trim() as Vacacione["semaforo"],
-            accionsugerida: String(
-              obtenerValor(fila, ["accionsugerida", "Acción sugerida"], "")
-            ).trim(),
-          };
-        }
-      );
-
-      setEmpleados((prev) => [...empleadosImportados, ...prev]);
-      toast.success("Excel cargado correctamente");
-    };
-
-    reader.readAsBinaryString(archivo);
-    event.target.value = "";
-  };
-
   const validarFormulario = () => {
     if (!formulario.idempleado || !formulario.nombre) {
       toast.error("ID empleado y nombre son obligatorios");
@@ -658,8 +381,18 @@ const limpiarBusqueda = () => {
       return false;
     }
 
-    if (!formulario.semaforo) {
-      toast.error("Selecciona el semáforo");
+    if (!formulario.area) {
+      toast.error("Selecciona el área");
+      return false;
+    }
+
+    if (!formulario.puesto) {
+      toast.error("Selecciona el puesto");
+      return false;
+    }
+
+    if (!formulario.fechaingreso) {
+      toast.error("Selecciona la fecha de ingreso");
       return false;
     }
 
@@ -706,18 +439,20 @@ const limpiarBusqueda = () => {
       }
 
       setEmpleados((prev: VacacioneSinTurno[]) =>
-  prev.map((empleado) =>
-    empleado.id === editandoId
-      ? {
-          ...empleado,
-          ...formulario,
-          id: editandoId,
-          proporcionaldevengado: Number(formulario.proporcionaldevengado),
-          saldodisponible:Number(formulario.saldodisponible)
-        }
-      : empleado
-  )
-);
+        prev.map((empleado) =>
+          empleado.id === editandoId
+            ? {
+                ...empleado,
+                ...formulario,
+                id: editandoId,
+                proporcionaldevengado: Number(
+                  formulario.proporcionaldevengado
+                ),
+                saldodisponible: Number(formulario.saldodisponible),
+              }
+            : empleado
+        )
+      );
 
       toast.success("Registro actualizado localmente");
       limpiarFormulario();
@@ -747,27 +482,34 @@ const limpiarBusqueda = () => {
   };
 
   const editarEmpleado = async (empleado: VacacioneSinTurno) => {
-  if (!empleado.id) return;
+    if (!empleado.id) return;
 
-  setEditandoId(empleado.id);
+    setEditandoId(empleado.id);
 
-  const { id, ...datosFormulario } = empleado;
+    const { id, ...datosFormulario } = empleado;
 
-  setFormulario({
-    ...datosFormulario,
-    proporcionaldevengado: String(datosFormulario.proporcionaldevengado ?? "0.00"),
-    saldodisponible: String(datosFormulario.saldodisponible ?? "0.00"),
-  });
+    setFormulario({
+      ...datosFormulario,
+      fechaingreso: normalizarFechaInput(datosFormulario.fechaingreso),
+      iniciocicloactual: normalizarFechaInput(
+        datosFormulario.iniciocicloactual
+      ),
+      fincicloactual: normalizarFechaInput(datosFormulario.fincicloactual),
+      proporcionaldevengado: String(
+        datosFormulario.proporcionaldevengado ?? "0.00"
+      ),
+      saldodisponible: String(datosFormulario.saldodisponible ?? "0.00"),
+    });
 
-  await obtenerDetalleEmpleado(empleado.id);
-};
+    await obtenerDetalleEmpleado(empleado.id);
+  };
 
   const eliminarEmpleado = async (empleado: VacacioneSinTurno) => {
     if (!empleado.id) return;
 
-    if(empleado.idempleado==="0001"){
-      toast.error("El usuario administrador principal no se puede eliminar")
-      return
+    if (empleado.idempleado === "0001") {
+      toast.error("El usuario administrador principal no se puede eliminar");
+      return;
     }
 
     const confirmar = confirm("¿Seguro que deseas eliminar este registro?");
@@ -818,52 +560,6 @@ const limpiarBusqueda = () => {
     }
   };
 
-  const guardarImportadosEnBaseDatos = async () => {
-    const importados = empleados.filter(
-      (empleado) => empleado.id && empleado.id >= 1000000000000
-    );
-
-    if (importados.length === 0) {
-      toast.error("No hay registros importados para guardar");
-      return;
-    }
-
-    try {
-      setGuardando(true);
-
-      const payload = importados.map(({ id, ...empleado }) => empleado);
-
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/importar-json`,
-        {
-          method: "POST",
-          headers: headersJson(),
-          body: JSON.stringify({
-            empleados: payload,
-          }),
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || "Error al guardar importados");
-        return;
-      }
-
-      toast.success(
-        `Importación finalizada. Creados: ${data.creados}, omitidos: ${data.omitidos}`
-      );
-
-      await obtenerEmpleados();
-      limpiarFormulario();
-    } catch (error) {
-      toast.error("No se pudo conectar con el servidor");
-    } finally {
-      setGuardando(false);
-    }
-  };
-
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-8 sm:px-6 lg:px-8">
       <section className="mx-auto max-w-7xl">
@@ -872,56 +568,26 @@ const limpiarBusqueda = () => {
             <p className="text-lg font-semibold uppercase tracking-wide text-orange-500">
               Administración
             </p>
-            <h1 className="mt-1 text-2xl font-bold text-gray-800">
-              Panel 
-            </h1>
+            <h1 className="mt-1 text-2xl font-bold text-gray-800">Panel</h1>
             <p className="mt-1 text-sm text-gray-500">
               Administra empleados, roles y recuperación de contraseña.
             </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <input
-              ref={inputExcelRef}
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={importarExcel}
-              className="hidden"
-            />
-
             <button
               type="button"
-              onClick={() => obtenerEmpleados()}
+              onClick={actualizarVacaciones}
               disabled={cargando}
-              className="flex items-center cursor-pointer justify-center gap-2 rounded-xl bg-white px-5 py-3 font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center cursor-pointer justify-center gap-2 rounded-xl bg-[#009b63] px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#007f52] disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw size={20} />
-              {cargando ? "Cargando..." : "Actualizar"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => inputExcelRef.current?.click()}
-              className="flex items-center justify-center cursor-pointer gap-2 rounded-xl bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52]"
-            >
-              <Upload size={20} />
-              Importar Excel
-            </button>
-
-            <button
-              type="button"
-              disabled={guardando}
-              onClick={guardarImportadosEnBaseDatos}
-              className="flex items-center cursor-pointer justify-center gap-2 rounded-xl bg-gray-800 px-5 py-3 font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <Save size={20} />
-              {guardando ? "Guardando..." : "Guardar importados"}
+              {cargando ? "Actualizando..." : "Actualizar vacaciones"}
             </button>
           </div>
         </header>
 
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
-          {/* Columna izquierda */}
           <section className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm xl:sticky xl:top-6 xl:col-span-4 xl:self-start">
             <div className="mb-5 border-b border-gray-100 pb-4">
               <h2 className="text-xl font-semibold text-gray-800">
@@ -969,47 +635,33 @@ const limpiarBusqueda = () => {
               />
 
               <SelectTexto
-  label="Área"
-  value={formulario.area}
-  onChange={(value) =>
-    setFormulario({ ...formulario, area: value })
-  }
-  opciones={areas.map((area) => area.area)}
-  disabled={cargandoCatalogos}
-/>
+                label="Área"
+                value={formulario.area}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, area: value })
+                }
+                opciones={areas.map((area) => area.area)}
+                disabled={cargandoCatalogos}
+              />
 
               <SelectTexto
-  label="Puesto"
-  value={formulario.puesto}
-  onChange={(value) =>
-    setFormulario({ ...formulario, puesto: value })
-  }
-  opciones={puestos.map((puesto) => puesto.puesto)}
-  disabled={cargandoCatalogos}
-/>
+                label="Puesto"
+                value={formulario.puesto}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, puesto: value })
+                }
+                opciones={puestos.map((puesto) => puesto.puesto)}
+                disabled={cargandoCatalogos}
+              />
 
               <InputTexto
-  label="Fecha ingreso"
-  type="date"
-  value={formulario.fechaingreso}
-  onChange={(value) => {
-    const calculo = calcularVacacionesPorFechaIngreso(value);
-
-    setFormulario({
-      ...formulario,
-      fechaingreso: value,
-      antiguedad: calculo.antiguedad,
-      diasderecho: calculo.diasderecho,
-      iniciocicloactual: calculo.iniciocicloactual,
-      fincicloactual: calculo.fincicloactual,
-      proporcionaldevengado: calculo.proporcionaldevengado,
-      saldodisponible: calculo.saldodisponible,
-      diasporvencer: calculo.diasporvencer,
-      diasavencer: calculo.diasavencer,
-      semaforo: calculo.semaforo as Vacacione["semaforo"],
-    });
-  }}
-/>
+                label="Fecha ingreso"
+                type="date"
+                value={formulario.fechaingreso}
+                onChange={(value) =>
+                  setFormulario({ ...formulario, fechaingreso: value })
+                }
+              />
 
               <InputNumero
                 label="Antigüedad"
@@ -1041,7 +693,7 @@ const limpiarBusqueda = () => {
 
               <InputTexto
                 label="Fin ciclo actual"
-                 disabled={true}
+                disabled={true}
                 type="date"
                 value={formulario.fincicloactual}
                 onChange={(value) =>
@@ -1052,7 +704,7 @@ const limpiarBusqueda = () => {
               <InputTexto
                 label="Proporcional devengado"
                 disabled={true}
-                value={(formulario.proporcionaldevengado)}
+                value={formulario.proporcionaldevengado}
                 onChange={(value) =>
                   setFormulario({
                     ...formulario,
@@ -1072,7 +724,7 @@ const limpiarBusqueda = () => {
 
               <InputTexto
                 label="Saldo disponible"
-                 disabled={true}
+                disabled={true}
                 value={formulario.saldodisponible}
                 onChange={(value) =>
                   setFormulario({ ...formulario, saldodisponible: value })
@@ -1094,7 +746,7 @@ const limpiarBusqueda = () => {
                 onChange={(value) =>
                   setFormulario({ ...formulario, diasavencer: value })
                 }
-                 disabled={true}
+                disabled={true}
               />
 
               <SelectTexto
@@ -1107,6 +759,7 @@ const limpiarBusqueda = () => {
                   })
                 }
                 opciones={["CONTROLADO", "ATENCION", "SINSALDO"]}
+                disabled={true}
               />
 
               <div>
@@ -1152,7 +805,6 @@ const limpiarBusqueda = () => {
             </div>
           </section>
 
-          {/* Columna derecha */}
           <div className="space-y-6 xl:col-span-8">
             <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="flex flex-col gap-3 border-b border-gray-200 p-6 sm:flex-row sm:items-center sm:justify-between">
@@ -1171,48 +823,48 @@ const limpiarBusqueda = () => {
               </div>
 
               <div className="border-b border-gray-200 bg-white px-6 py-4">
-  <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-    <div className="flex-1">
-      <label className="mb-1.5 block text-sm font-medium text-gray-600">
-        Buscar por ID empleado
-      </label>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                  <div className="flex-1">
+                    <label className="mb-1.5 block text-sm font-medium text-gray-600">
+                      Buscar por ID empleado
+                    </label>
 
-      <input
-        type="text"
-        value={busquedaIdEmpleado}
-        maxLength={4}
-        onChange={(e) =>
-          setBusquedaIdEmpleado(e.target.value.replace(/\D/g, ""))
-        }
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            buscarPorIdEmpleado();
-          }
-        }}
-        placeholder="Ej. 0001"
-        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
-      />
-    </div>
+                    <input
+                      type="text"
+                      value={busquedaIdEmpleado}
+                      maxLength={4}
+                      onChange={(e) =>
+                        setBusquedaIdEmpleado(e.target.value.replace(/\D/g, ""))
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          buscarPorIdEmpleado();
+                        }
+                      }}
+                      placeholder="Ej. 0001"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
+                    />
+                  </div>
 
-    <button
-      type="button"
-      onClick={buscarPorIdEmpleado}
-      disabled={cargando}
-      className="rounded-xl cursor-pointer bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      Buscar
-    </button>
+                  <button
+                    type="button"
+                    onClick={buscarPorIdEmpleado}
+                    disabled={cargando}
+                    className="rounded-xl cursor-pointer bg-[#009b63] px-5 py-3 font-semibold text-white transition hover:bg-[#007f52] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Buscar
+                  </button>
 
-    <button
-      type="button"
-      onClick={limpiarBusqueda}
-      disabled={cargando}
-      className="rounded-xl border cursor-pointer border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      Limpiar
-    </button>
-  </div>
-</div>
+                  <button
+                    type="button"
+                    onClick={limpiarBusqueda}
+                    disabled={cargando}
+                    className="rounded-xl border cursor-pointer border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
 
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left">
@@ -1288,12 +940,12 @@ const limpiarBusqueda = () => {
                               <button
                                 type="button"
                                 onClick={() => eliminarEmpleado(empleado)}
-                                disabled={empleado.idempleado ==="0001"}
+                                disabled={empleado.idempleado === "0001"}
                                 className={`rounded-lg p-2 transition cursor-pointer ${
-    empleado.idempleado === "0001"
-      ? "cursor-not-allowed text-gray-300"
-      : "text-red-600 hover:bg-red-50"
-  }`}
+                                  empleado.idempleado === "0001"
+                                    ? "cursor-not-allowed text-gray-300"
+                                    : "text-red-600 hover:bg-red-50"
+                                }`}
                                 title="Eliminar"
                               >
                                 <Trash2 size={18} />
@@ -1564,7 +1216,7 @@ function InputTexto({
   placeholder,
   type = "text",
   maxLength,
-  disabled=false
+  disabled = false,
 }: {
   label: string;
   value: string;
@@ -1572,7 +1224,7 @@ function InputTexto({
   placeholder?: string;
   type?: string;
   maxLength?: number;
-  disabled?:boolean
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -1602,7 +1254,7 @@ function InputNumero({
   label: string;
   value: number;
   onChange: (value: number) => void;
-   disabled?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <div>
@@ -1642,8 +1294,9 @@ function SelectTexto({
 
       <select
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
+        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
       >
         <option value="">Selecciona una opción</option>
 
