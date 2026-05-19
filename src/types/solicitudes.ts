@@ -1,53 +1,4 @@
-import { Solicitud } from "./schemas";
 
-export type SolicitudDetalle = {
-  id: number;
-  fechainicio: string;
-  fechatermino: string;
-  diastotales: number;
-  estatus: string;
-  motivorechazo: string | null;
-  empleado: {
-    id: number;
-    idempleado: string;
-    nombre: string;
-    tipoempleado: string;
-    area: string;
-    puesto: string;
-    fechaingreso: string;
-    antiguedad: number;
-    diasderecho: number;
-    diastomados: number;
-    saldodisponible: string;
-    semaforo: string;
-    accionsugerida: string;
-  };
-};
-
-
-
-
-export type EmpleadoVacaciones = {
-  id: number;
-  idempleado: string;
-  nombre: string;
-  tipoempleado: string;
-  area: string;
-  puesto: string;
-  fechaingreso: string;
-  antiguedad: number;
-  diasderecho: number;
-  inicioactual: string;
-  finalactual: string;
-  proporcionaldevengado: string;
-  diastomados: number;
-  saldodisponible: string;
-  diasporvencer: number;
-  diasavencer: number;
-  semaforo: string;
-  accionsugerida: string;
-  solicitudes: Solicitud[];
-};
 
 
 
@@ -76,8 +27,3 @@ export type Usuario = {
   departamento: string;
 };
 
-
-export type LoginForm = {
-  idempleado: string;
-  password: string;
-};

@@ -6,8 +6,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
 import { createLoginSubmit } from "@/src/lib/login";
-import { LoginForm } from "@/src/types/solicitudes";
 import Link from "next/link";
+import { LoginForm } from "@/src/types/schemas";
 
 
 export default function Login() {

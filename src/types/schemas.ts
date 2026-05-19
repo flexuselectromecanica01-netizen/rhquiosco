@@ -40,6 +40,8 @@ export type VacacioneFormulario = Omit<Vacacione,| "id"| "turno"|"tipoempleado"|
 };
 
 
+
+
 export const SolicitudSchema = z.object({
     id:z.number(),
     fechainicio:z.string(),
@@ -52,7 +54,10 @@ export const SolicitudSchema = z.object({
 })
 
 export type Solicitud = z.infer<typeof SolicitudSchema>
-
+export type SolicitudEmpleadoVacaciones =
+  z.infer<typeof VacacioneSchema> & {
+    solicitudes: Solicitud[]
+  }
 
 
 export const CreateSolicitudSchema=SolicitudSchema.omit({
@@ -104,6 +109,7 @@ export const LineaSistemaSchema = z.enum([
 
 export const LoginSchema = z.object({
   id: z.number(),
+  idempleado:z.string(),
   empleado: VacacioneSchema,
   password: z.string(),
   actualizarpassword: z.boolean(),
@@ -114,6 +120,8 @@ export const LoginSchema = z.object({
 });
 
 export type Login = z.infer<typeof LoginSchema>;
+export type LoginForm = Pick<Login , 'idempleado' | 'password'>
+
 
 
 export const AreaEnumSchema = z.enum([

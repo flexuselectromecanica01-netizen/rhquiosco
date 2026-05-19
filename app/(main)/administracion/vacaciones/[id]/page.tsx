@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { formatearFecha } from "@/src/utils/formatearFecha";
-import { SolicitudDetalle } from "@/src/types/solicitudes";
+import { Solicitud } from "@/src/types/schemas";
 
 
 export default function DetalleVacaciones() {
@@ -13,7 +13,7 @@ export default function DetalleVacaciones() {
 
   const id = params.id as string;
 
-  const [solicitud, setSolicitud] = useState<SolicitudDetalle | null>(null);
+  const [solicitud, setSolicitud] = useState<Solicitud | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -121,14 +121,14 @@ export default function DetalleVacaciones() {
           <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
             <p className="text-sm text-gray-500">Días disponibles</p>
             <h2 className="text-4xl font-bold text-gray-800 mt-2">
-              {empleado.saldodisponible}
+              {empleado?.saldodisponible}
             </h2>
           </div>
 
           <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
             <p className="text-sm text-gray-500">Días derecho</p>
             <h2 className="text-4xl font-bold text-gray-800 mt-2">
-              {empleado.diasderecho}
+              {empleado?.diasderecho}
             </h2>
           </div>
 
@@ -178,56 +178,56 @@ export default function DetalleVacaciones() {
             <div>
               <p className="text-sm text-gray-500">No. empleado</p>
               <p className="font-semibold text-gray-800">
-                {empleado.idempleado}
+                {empleado?.idempleado}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Nombre</p>
               <p className="font-semibold text-gray-800">
-                {empleado.nombre}
+                {empleado?.nombre}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Área</p>
               <p className="font-semibold text-gray-800">
-                {empleado.area}
+                {empleado?.area}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Puesto</p>
               <p className="font-semibold text-gray-800">
-                {empleado.puesto}
+                {empleado?.puesto}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Fecha de ingreso</p>
               <p className="font-semibold text-gray-800">
-                {formatearFecha(empleado.fechaingreso)}
+                {formatearFecha(empleado?.fechaingreso!)}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Antigüedad</p>
               <p className="font-semibold text-gray-800">
-                {empleado.antiguedad}
+                {empleado?.antiguedad}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Semáforo</p>
               <p className="font-semibold text-gray-800">
-                {empleado.semaforo}
+                {empleado?.semaforo}
               </p>
             </div>
 
             <div>
               <p className="text-sm text-gray-500">Acción sugerida</p>
               <p className="font-semibold text-gray-800">
-                {empleado.accionsugerida}
+                {empleado?.accionsugerida}
               </p>
             </div>
           </div>

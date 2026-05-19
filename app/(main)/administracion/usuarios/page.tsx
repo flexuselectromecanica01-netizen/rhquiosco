@@ -35,6 +35,163 @@ const formularioInicial: VacacioneFormulario = {
   accionsugerida: "",
 };
 
+const crearFechaLocal = (fecha: string) => {
+  const [year, month, day] = fecha.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const formatearFechaInput = (fecha: Date) => {
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, "0");
+  const day = String(fecha.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const sumarMeses = (fecha: Date, meses: number) => {
+  const nuevaFecha = new Date(fecha);
+  nuevaFecha.setMonth(nuevaFecha.getMonth() + meses);
+  return nuevaFecha;
+};
+
+const sumarAnios = (fecha: Date, anios: number) => {
+  const nuevaFecha = new Date(fecha);
+  nuevaFecha.setFullYear(nuevaFecha.getFullYear() + anios);
+  return nuevaFecha;
+};
+
+const calcularDiasVacacionesLey = (antiguedad: number) => {
+  if (antiguedad <= 0) return 0;
+
+  if (antiguedad === 1) return 12;
+  if (antiguedad === 2) return 14;
+  if (antiguedad === 3) return 16;
+  if (antiguedad === 4) return 18;
+  if (antiguedad === 5) return 20;
+
+  if (antiguedad >= 6 && antiguedad <= 10) return 22;
+  if (antiguedad >= 11 && antiguedad <= 15) return 24;
+  if (antiguedad >= 16 && antiguedad <= 20) return 26;
+  if (antiguedad >= 21 && antiguedad <= 25) return 28;
+  if (antiguedad >= 26 && antiguedad <= 30) return 30;
+  if (antiguedad >= 31 && antiguedad <= 35) return 32;
+
+  return 32;
+};
+
+const calcularAntiguedad = (fechaIngreso: string, hoy = new Date()) => {
+  const ingreso = crearFechaLocal(fechaIngreso);
+
+  let antiguedad = hoy.getFullYear() - ingreso.getFullYear();
+
+  const aniversarioEsteAnio = new Date(
+    hoy.getFullYear(),
+    ingreso.getMonth(),
+    ingreso.getDate()
+  );
+
+  if (hoy < aniversarioEsteAnio) {
+    antiguedad--;
+  }
+
+  return Math.max(antiguedad, 0);
+};
+
+const calcularMesesTranscurridos = (inicio: Date, hoy = new Date()) => {
+  let meses =
+    (hoy.getFullYear() - inicio.getFullYear()) * 12 +
+    (hoy.getMonth() - inicio.getMonth());
+
+  if (hoy.getDate() < inicio.getDate()) {
+    meses--;
+  }
+
+  return Math.max(meses, 0);
+};
+
+const calcularDiasEntreFechas = (desde: Date, hasta: Date) => {
+  const inicio = new Date(
+    desde.getFullYear(),
+    desde.getMonth(),
+    desde.getDate()
+  );
+
+  const fin = new Date(
+    hasta.getFullYear(),
+    hasta.getMonth(),
+    hasta.getDate()
+  );
+
+  const diferencia = fin.getTime() - inicio.getTime();
+
+  return Math.max(Math.ceil(diferencia / (1000 * 60 * 60 * 24)), 0);
+};
+
+const calcularSemaforo = (saldoDisponible: number) => {
+  if (saldoDisponible <= 0) return "SINSALDO";
+  if (saldoDisponible <= 3) return "ATENCION";
+  return "CONTROLADO";
+};
+
+const calcularVacacionesPorFechaIngreso = (fechaIngreso: string) => {
+  if (!fechaIngreso) {
+    return {
+      antiguedad: 0,
+      diasderecho: 0,
+      iniciocicloactual: "",
+      fincicloactual: "",
+      proporcionaldevengado: "0.00",
+      saldodisponible: "0.00",
+      diasporvencer: 0,
+      diasavencer: 0,
+      semaforo: "",
+    };
+  }
+
+  const ingreso = crearFechaLocal(fechaIngreso);
+  const hoy = new Date();
+
+  const fechaSeisMeses = sumarMeses(ingreso, 6);
+  const antiguedad = calcularAntiguedad(fechaIngreso, hoy);
+
+  let diasderecho = 0;
+  let inicioCiclo: Date;
+  let finCiclo: Date;
+
+  if (hoy < fechaSeisMeses) {
+    diasderecho = 0;
+    inicioCiclo = fechaSeisMeses;
+    finCiclo = sumarMeses(inicioCiclo, 4);
+  } else if (antiguedad < 1) {
+    diasderecho = 6;
+    inicioCiclo = fechaSeisMeses;
+    finCiclo = sumarMeses(inicioCiclo, 4);
+  } else {
+    diasderecho = calcularDiasVacacionesLey(antiguedad);
+    inicioCiclo = sumarAnios(ingreso, antiguedad);
+    finCiclo = sumarMeses(inicioCiclo, 5);
+  }
+
+  const proporcionaldevengado = calcularMesesTranscurridos(inicioCiclo, hoy);
+
+  const saldoDisponible = diasderecho;
+  const diasPorVencer = saldoDisponible;
+  const diasAVencer = calcularDiasEntreFechas(hoy, finCiclo);
+  const semaforo = calcularSemaforo(saldoDisponible);
+
+  return {
+    antiguedad,
+    diasderecho,
+    iniciocicloactual: formatearFechaInput(inicioCiclo),
+    fincicloactual: formatearFechaInput(finCiclo),
+    proporcionaldevengado: proporcionaldevengado.toFixed(2),
+    saldodisponible: saldoDisponible.toFixed(2),
+    diasporvencer: diasPorVencer,
+    diasavencer: diasAVencer,
+    semaforo,
+  };
+};
+
 
 
 export default function ImportarVacacionesPage() {
@@ -808,17 +965,32 @@ const limpiarBusqueda = () => {
 />
 
               <InputTexto
-                label="Fecha ingreso"
-                type="date"
-                value={formulario.fechaingreso}
-                onChange={(value) =>
-                  setFormulario({ ...formulario, fechaingreso: value })
-                }
-              />
+  label="Fecha ingreso"
+  type="date"
+  value={formulario.fechaingreso}
+  onChange={(value) => {
+    const calculo = calcularVacacionesPorFechaIngreso(value);
+
+    setFormulario({
+      ...formulario,
+      fechaingreso: value,
+      antiguedad: calculo.antiguedad,
+      diasderecho: calculo.diasderecho,
+      iniciocicloactual: calculo.iniciocicloactual,
+      fincicloactual: calculo.fincicloactual,
+      proporcionaldevengado: calculo.proporcionaldevengado,
+      saldodisponible: calculo.saldodisponible,
+      diasporvencer: calculo.diasporvencer,
+      diasavencer: calculo.diasavencer,
+      semaforo: calculo.semaforo as Vacacione["semaforo"],
+    });
+  }}
+/>
 
               <InputNumero
                 label="Antigüedad"
                 value={formulario.antiguedad}
+                disabled={true}
                 onChange={(value) =>
                   setFormulario({ ...formulario, antiguedad: value })
                 }
@@ -826,6 +998,7 @@ const limpiarBusqueda = () => {
 
               <InputNumero
                 label="Días derecho"
+                disabled={true}
                 value={formulario.diasderecho}
                 onChange={(value) =>
                   setFormulario({ ...formulario, diasderecho: value })
@@ -834,6 +1007,7 @@ const limpiarBusqueda = () => {
 
               <InputTexto
                 label="Inicio ciclo actual"
+                disabled={true}
                 type="date"
                 value={formulario.iniciocicloactual}
                 onChange={(value) =>
@@ -843,6 +1017,7 @@ const limpiarBusqueda = () => {
 
               <InputTexto
                 label="Fin ciclo actual"
+                 disabled={true}
                 type="date"
                 value={formulario.fincicloactual}
                 onChange={(value) =>
@@ -852,6 +1027,7 @@ const limpiarBusqueda = () => {
 
               <InputTexto
                 label="Proporcional devengado"
+                disabled={true}
                 value={(formulario.proporcionaldevengado)}
                 onChange={(value) =>
                   setFormulario({
@@ -872,6 +1048,7 @@ const limpiarBusqueda = () => {
 
               <InputTexto
                 label="Saldo disponible"
+                 disabled={true}
                 value={formulario.saldodisponible}
                 onChange={(value) =>
                   setFormulario({ ...formulario, saldodisponible: value })
@@ -880,6 +1057,7 @@ const limpiarBusqueda = () => {
 
               <InputNumero
                 label="Días por vencer"
+                disabled={true}
                 value={formulario.diasporvencer}
                 onChange={(value) =>
                   setFormulario({ ...formulario, diasporvencer: value })
@@ -892,6 +1070,7 @@ const limpiarBusqueda = () => {
                 onChange={(value) =>
                   setFormulario({ ...formulario, diasavencer: value })
                 }
+                 disabled={true}
               />
 
               <SelectTexto

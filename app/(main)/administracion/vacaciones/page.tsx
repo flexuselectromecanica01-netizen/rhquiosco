@@ -4,12 +4,12 @@ import Link from "next/link";
 import { Eye } from "lucide-react";
 import { useEffect, useState } from "react";
 import { formatearFecha } from "@/src/utils/formatearFecha";
-import { EmpleadoVacaciones } from "@/src/types/solicitudes";
+import { SolicitudEmpleadoVacaciones } from "@/src/types/schemas";
 
 
 
 export default function Vacaciones() {
-  const [empleados, setEmpleados] = useState<EmpleadoVacaciones[]>([]);
+  const [empleados, setEmpleados] = useState<SolicitudEmpleadoVacaciones[]>([]);
   const [loading, setLoading] = useState(true);
   const [busquedaIdEmpleado, setBusquedaIdEmpleado] = useState("");
 const [paginaActual, setPaginaActual] = useState(1);
