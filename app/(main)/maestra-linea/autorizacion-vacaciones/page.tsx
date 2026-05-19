@@ -1,7 +1,8 @@
 "use client";
 
 import { useAuth } from "@/app/context/AuthContext";
-import { EmpleadoVacaciones, SolicitudTabla } from "@/src/types/solicitudes";
+import { SolicitudEmpleadoVacaciones } from "@/src/types/schemas";
+import {  SolicitudTabla } from "@/src/types/solicitudes";
 import { formatearFecha } from "@/src/utils/formatearFecha";
 import { Check, X, User, CalendarDays, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -47,7 +48,7 @@ export default function AutorizacionVacaciones() {
       }
     );
 
-    const data: EmpleadoVacaciones[] = await res.json();
+    const data: SolicitudEmpleadoVacaciones[] = await res.json();
 
     if (!res.ok) {
       console.warn("No se encontraron solicitudes:", data);
