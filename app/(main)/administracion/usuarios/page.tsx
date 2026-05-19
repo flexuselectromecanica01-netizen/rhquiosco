@@ -295,6 +295,27 @@ const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
   try {
     setCargando(true);
 
+    // 1. Primero recalcula ciclos en backend
+    const resRecalcular = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/recalcular-ciclos`,
+      {
+        method: "PATCH",
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
+      }
+    );
+
+    const dataRecalcular = await resRecalcular.json();
+
+    if (!resRecalcular.ok) {
+      toast.error(dataRecalcular.message || "Error al recalcular vacaciones");
+      return;
+    }
+
+    // 2. Después obtiene empleados actualizados
     const params = new URLSearchParams({
       page: String(page),
       limit: String(limit),
@@ -327,6 +348,8 @@ const [cargandoCatalogos, setCargandoCatalogos] = useState(false);
     setLimite(result.meta.limit);
     setTotalPaginas(result.meta.totalPages);
     setTotalRegistros(result.meta.total);
+
+    toast.success("Vacaciones actualizadas correctamente");
   } catch (error) {
     toast.error("No se pudo conectar con el servidor");
   } finally {
@@ -724,19 +747,20 @@ const limpiarBusqueda = () => {
   };
 
   const editarEmpleado = async (empleado: VacacioneSinTurno) => {
-    if (!empleado.id) return;
+  if (!empleado.id) return;
 
-    setEditandoId(empleado.id);
+  setEditandoId(empleado.id);
 
-    const { id, ...datosFormulario } = empleado;
+  const { id, ...datosFormulario } = empleado;
+
   setFormulario({
-  ...datosFormulario,
-  proporcionaldevengado: String(datosFormulario.proporcionaldevengado),
-  saldodisponible:String(formulario.saldodisponible)
-});
+    ...datosFormulario,
+    proporcionaldevengado: String(datosFormulario.proporcionaldevengado ?? "0.00"),
+    saldodisponible: String(datosFormulario.saldodisponible ?? "0.00"),
+  });
 
-    await obtenerDetalleEmpleado(empleado.id);
-  };
+  await obtenerDetalleEmpleado(empleado.id);
+};
 
   const eliminarEmpleado = async (empleado: VacacioneSinTurno) => {
     if (!empleado.id) return;
