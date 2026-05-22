@@ -711,31 +711,6 @@ drawText(formatearFecha(fechaRegreso), 187, 525);
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-10">
             <div className="space-y-6">
               <div className="border-b border-gray-200 pb-4">
-                <p className="mb-1 text-sm text-gray-500">Antigüedad</p>
-                <p className="text-xl font-semibold text-gray-800">
-                  {usuario?.empleado?.antiguedad ?? "Sin información"}
-                </p>
-              </div>
-
-              <div className="border-b border-gray-200 pb-4">
-                <p className="mb-1 text-sm text-gray-500">
-                  Días que tiene derecho
-                </p>
-                <p className="text-xl font-semibold text-gray-800">
-                  {usuario?.empleado?.diasderecho ?? "Sin información"}
-                </p>
-              </div>
-
-              <div className="border-b border-gray-200 pb-4">
-                <p className="mb-1 text-sm text-gray-500">Saldo</p>
-                <p className="text-xl font-semibold text-gray-800">
-                  {usuario?.empleado?.saldodisponible ?? "Sin información"} Dias disponibles
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Fecha de ingreso</p>
                 <p className="text-xl font-semibold text-gray-800">
                   {usuario?.empleado?.fechaingreso
@@ -743,10 +718,37 @@ drawText(formatearFecha(fechaRegreso), 187, 525);
                     : "Sin información"}
                 </p>
               </div>
+              
+              <div className="border-b border-gray-200 pb-4">
+                <p className="mb-1 text-sm text-gray-500">Saldo</p>
+                <p className="text-xl font-semibold text-gray-800">
+                  {usuario?.empleado?.saldodisponible ?? "Sin información"} dias disponibles a elegir
+                </p>
+              </div>
+              
+              <div className="border-b border-gray-200 pb-4">
+                <p className="mb-1 text-sm text-gray-500">Antigüedad</p>
+                <p className="text-xl font-semibold text-gray-800">
+                  {usuario?.empleado?.antiguedad ?? "Sin información"} años 
+                </p>
+              </div>
+
+              
+            </div>
+
+            <div className="space-y-6">
+              <div className="border-b border-gray-200 pb-4">
+                <p className="mb-1 text-sm text-gray-500">
+                  Días que tiene derecho 
+                </p>
+                <p className="text-xl font-semibold text-gray-800">
+                  {usuario?.empleado?.diasderecho ?? "Sin información"} dias correspondientes por ley
+                </p>
+              </div>
               <div className="border-b border-gray-200 pb-4">
                 <p className="mb-1 text-sm text-gray-500">Dias tomados</p>
                 <p className="text-xl font-semibold text-gray-800">
-                  {usuario?.empleado.diastomados}
+                  {usuario?.empleado.diastomados} dias tomados por el trabajador 
                 </p>
               </div>
 
