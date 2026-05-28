@@ -69,6 +69,14 @@ export default function NotFound() {
             </p>
           </div>
         </div>
+
+
+        <button className="bg-green-600 text-white p-3 rounded-lg">
+          Guardar
+        </button>
+
+
+
       </section>
     </main>
   );
