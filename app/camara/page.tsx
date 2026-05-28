@@ -8,7 +8,10 @@ import {
   RotateCcw,
   LogOut,
   Volume2,
+  UserCheck,
 } from "lucide-react";
+import Header from "../components/Header";
+import Footer from "../components/Footer";
 
 type TipoRegistro =
   | "entrada"
@@ -28,6 +31,11 @@ type AccionManual = {
   titulo: string;
   descripcion: string;
   icono: React.ReactNode;
+};
+
+const empleadoDetectado = {
+  idempleado: "0102",
+  nombre: "Diego Trejo",
 };
 
 export default function AsistenciaFacial() {
@@ -128,6 +136,13 @@ export default function AsistenciaFacial() {
     return `Salida de jornada laboral registrada con la hora ${hora}`;
   };
 
+  const obtenerTituloRegistro = (tipo: TipoRegistro) => {
+    if (tipo === "entrada") return "Entrada registrada";
+    if (tipo === "salidaComida") return "Salida a comida registrada";
+    if (tipo === "entradaComida") return "Entrada de comida registrada";
+    return "Salida de jornada registrada";
+  };
+
   const registrarRostro = () => {
     if (!rostroDetectado) {
       setMensaje("No se detecta rostro para registrar");
@@ -136,23 +151,10 @@ export default function AsistenciaFacial() {
     }
 
     setRostroRegistrado(true);
-    setMensaje("Rostro registrado correctamente");
-    hablar("Rostro registrado correctamente");
-
-    /*
-      Aquí después puedes guardar el descriptor facial del empleado.
-
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/biometrico-facial`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          idempleado: "0102",
-          descriptorFacial: descriptor,
-        }),
-      });
-    */
+    setMensaje(
+      `Rostro registrado correctamente: ${empleadoDetectado.nombre} - ${empleadoDetectado.idempleado}`
+    );
+    hablar(`Rostro registrado correctamente de ${empleadoDetectado.nombre}`);
   };
 
   const registrarAsistencia = ({
@@ -178,9 +180,19 @@ export default function AsistenciaFacial() {
     }));
 
     const texto = obtenerTextoRegistro(tipo, hora);
+    const titulo = obtenerTituloRegistro(tipo);
 
-    setMensaje(`✅ Asistencia registrada - ${hora}`);
-    hablar(texto);
+    if (metodo === "FACIAL") {
+      setMensaje(
+        `✅ ${titulo} - ${hora} | ${empleadoDetectado.idempleado} - ${empleadoDetectado.nombre}`
+      );
+
+      hablar(`${texto}. ${empleadoDetectado.nombre}`);
+    } else {
+      setMensaje(`✅ ${titulo} - ${hora} | ID empleado: ${idempleado}`);
+
+      hablar(texto);
+    }
 
     /*
       Aquí después conectas con NestJS:
@@ -206,8 +218,11 @@ export default function AsistenciaFacial() {
     const siguienteRegistro = obtenerSiguienteRegistro();
 
     if (!siguienteRegistro) {
-      setMensaje("La jornada de hoy ya está completa");
-      hablar("La jornada de hoy ya está completa");
+      setMensaje(
+        `La jornada de hoy ya está completa para ${empleadoDetectado.nombre}`
+      );
+      hablar(`La jornada de hoy ya está completa para ${empleadoDetectado.nombre}`);
+
       bloqueoRef.current = true;
 
       setTimeout(() => {
@@ -221,7 +236,7 @@ export default function AsistenciaFacial() {
 
     registrarAsistencia({
       tipo: siguienteRegistro,
-      idempleado: "RECONOCIDO_POR_ROSTRO",
+      idempleado: empleadoDetectado.idempleado,
       metodo: "FACIAL",
     });
 
@@ -335,16 +350,18 @@ export default function AsistenciaFacial() {
   }, [registro, audioActivo]);
 
   return (
-    <main className="min-h-screen bg-gray-100 p-6">
-      <section className="mx-auto max-w-6xl">
+    <main className="min-h-screen bg-gray-100">
+      <Header />
+
+      <section className="mx-auto max-w-6xl p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
             Registro de asistencia
           </h1>
 
           <p className="mt-2 text-sm text-gray-500">
-            El sistema registra automáticamente cuando detecta un rostro. Los
-            botones son solo para registro manual en caso de error.
+            Componente estático: al detectar rostro se identifica al empleado
+            fijo y se registra la siguiente asistencia pendiente.
           </p>
         </div>
 
@@ -370,6 +387,28 @@ export default function AsistenciaFacial() {
                 muted
                 className="h-[340px] w-full object-cover"
               />
+            </div>
+
+            <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-600 text-white">
+                  <UserCheck size={22} />
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold text-emerald-700">
+                    Persona identificada
+                  </p>
+
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {empleadoDetectado.nombre}
+                  </h2>
+
+                  <p className="text-sm text-gray-500">
+                    ID empleado: {empleadoDetectado.idempleado}
+                  </p>
+                </div>
+              </div>
             </div>
 
             <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -399,6 +438,13 @@ export default function AsistenciaFacial() {
             <h2 className="text-xl font-bold text-gray-900">
               Asistencia del día
             </h2>
+
+            <div className="mt-4 rounded-xl bg-gray-50 px-4 py-3">
+              <p className="text-sm text-gray-500">Empleado identificado</p>
+              <p className="mt-1 font-bold text-gray-900">
+                {empleadoDetectado.idempleado} - {empleadoDetectado.nombre}
+              </p>
+            </div>
 
             <div className="mt-5 space-y-3 text-sm">
               <div className="flex justify-between rounded-xl bg-gray-50 px-4 py-3">
@@ -432,7 +478,7 @@ export default function AsistenciaFacial() {
 
             <div className="mt-6 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
               {rostroDetectado
-                ? "Rostro detectado. El registro automático está activo."
+                ? `Rostro detectado: ${empleadoDetectado.nombre}`
                 : "Esperando rostro o registro manual."}
             </div>
           </section>
@@ -475,7 +521,7 @@ export default function AsistenciaFacial() {
                     metodo: "MANUAL",
                   })
                 }
-                className="group rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md disabled:opacity-50"
+                className="group rounded-2xl border border-gray-200 bg-white p-6 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
               >
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-600 text-white transition group-hover:bg-emerald-700">
                   {accion.icono}
@@ -493,6 +539,8 @@ export default function AsistenciaFacial() {
           </div>
         </section>
       </section>
+
+      <Footer />
     </main>
   );
 }
