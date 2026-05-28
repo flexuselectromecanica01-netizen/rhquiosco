@@ -23,7 +23,7 @@ export default function Home() {
       titulo: "Trámites",
       href: "/vacaciones/camara",
       icono: FileText,
-      disabled: false,
+      disabled: true,
     },
     {
       titulo: "Caja de Ahorro",
