@@ -9,9 +9,11 @@ import {
   LogOut,
   Volume2,
   UserCheck,
+  Link,
 } from "lucide-react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import Image from "next/image";
 
 type TipoRegistro =
   | "entrada"
@@ -351,8 +353,20 @@ export default function AsistenciaFacial() {
 
   return (
     <main className="min-h-screen bg-gray-100">
-      <Header />
-
+      <header className="w-full bg-[#24282c]/95 shadow-md">
+  <div className="max-w-7xl mx-auto px-6 md:px-12 h-20 flex items-center justify-between">
+    <Link href="/" className="flex items-center" aria-label="Ir al inicio">
+      <Image
+        src="/logo.png"
+        alt="Flexus Electro"
+        width={190}
+        height={60}
+        className="object-contain"
+        priority
+      />
+    </Link>
+  </div>
+</header>
       <section className="mx-auto max-w-6xl p-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
