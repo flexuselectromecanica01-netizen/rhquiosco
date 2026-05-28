@@ -6,10 +6,31 @@ export default function AsistenciaFacial() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const bloqueoRef = useRef(false);
 
   const [mensaje, setMensaje] = useState("Preparando cámara...");
   const [rostroDetectado, setRostroDetectado] = useState(false);
-  const [registrando, setRegistrando] = useState(false);
+  const [asistenciaRegistrada, setAsistenciaRegistrada] = useState(false);
+  const [audioActivo, setAudioActivo] = useState(false);
+
+  const hablar = (texto: string) => {
+    if (!audioActivo) return;
+
+    if (!("speechSynthesis" in window)) {
+      console.warn("Este navegador no soporta síntesis de voz");
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    const voz = new SpeechSynthesisUtterance(texto);
+    voz.lang = "es-MX";
+    voz.rate = 1;
+    voz.pitch = 1;
+    voz.volume = 1;
+
+    window.speechSynthesis.speak(voz);
+  };
 
   useEffect(() => {
     let activo = true;
@@ -50,7 +71,7 @@ export default function AsistenciaFacial() {
         setMensaje("Coloca tu rostro frente a la cámara");
 
         intervalRef.current = setInterval(async () => {
-          if (!videoRef.current || registrando) return;
+          if (!videoRef.current) return;
 
           const deteccion = await faceapi.detectSingleFace(
             videoRef.current,
@@ -62,10 +83,41 @@ export default function AsistenciaFacial() {
 
           if (deteccion) {
             setRostroDetectado(true);
-            setMensaje("Rostro detectado");
+
+            if (!bloqueoRef.current) {
+              bloqueoRef.current = true;
+              setAsistenciaRegistrada(true);
+              setMensaje("Asistencia registrada");
+
+              hablar("Asistencia registrada");
+
+              /*
+                Aquí después conectas con NestJS:
+
+                await fetch(`${process.env.NEXT_PUBLIC_API_URL}/asistencias`, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    metodo: "FACIAL",
+                    tipo: "ENTRADA",
+                  }),
+                });
+              */
+
+              setTimeout(() => {
+                bloqueoRef.current = false;
+                setAsistenciaRegistrada(false);
+                setMensaje("Coloca tu rostro frente a la cámara");
+              }, 5000);
+            }
           } else {
             setRostroDetectado(false);
-            setMensaje("No se detecta rostro");
+
+            if (!bloqueoRef.current) {
+              setMensaje("No se detecta rostro");
+            }
           }
         }, 800);
       } catch (error) {
@@ -88,7 +140,7 @@ export default function AsistenciaFacial() {
           }
         }
 
-        setMensaje("No se pudo acceder a la cámara. Usa localhost o HTTPS.");
+        setMensaje("No se pudo acceder a la cámara");
       }
     };
 
@@ -104,49 +156,12 @@ export default function AsistenciaFacial() {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
       }
+
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
     };
-  }, [registrando]);
-
-  const registrarAsistencia = async () => {
-    try {
-      setRegistrando(true);
-      setMensaje("Registrando asistencia...");
-
-      /*
-        Aquí después conectas con tu backend NestJS:
-
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/asistencias/facial`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              metodo: "FACIAL",
-            }),
-          }
-        );
-
-        if (!res.ok) {
-          throw new Error("Error al registrar asistencia");
-        }
-      */
-
-      await new Promise((resolve) => setTimeout(resolve, 1200));
-
-      setMensaje("Asistencia registrada correctamente");
-
-      setTimeout(() => {
-        setRegistrando(false);
-        setMensaje("Coloca tu rostro frente a la cámara");
-      }, 5000);
-    } catch (error) {
-      console.error(error);
-      setMensaje("No se pudo registrar la asistencia");
-      setRegistrando(false);
-    }
-  };
+  }, [audioActivo]);
 
   return (
     <main className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
@@ -157,7 +172,9 @@ export default function AsistenciaFacial() {
 
         <p
           className={`mt-2 text-sm font-medium ${
-            rostroDetectado ? "text-emerald-600" : "text-gray-500"
+            asistenciaRegistrada || rostroDetectado
+              ? "text-emerald-600"
+              : "text-gray-500"
           }`}
         >
           {mensaje}
@@ -165,7 +182,9 @@ export default function AsistenciaFacial() {
 
         <div
           className={`mt-6 overflow-hidden rounded-xl bg-black border-4 ${
-            rostroDetectado ? "border-emerald-500" : "border-transparent"
+            asistenciaRegistrada || rostroDetectado
+              ? "border-emerald-500"
+              : "border-transparent"
           }`}
         >
           <video
@@ -178,12 +197,26 @@ export default function AsistenciaFacial() {
         </div>
 
         <button
-          onClick={registrarAsistencia}
-          disabled={!rostroDetectado || registrando}
-          className="mt-6 w-full rounded-xl bg-emerald-600 px-4 py-3 font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-gray-400"
+          onClick={() => {
+            setAudioActivo(true);
+            hablar("Audio activado");
+          }}
+          className="mt-6 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
         >
-          {registrando ? "Registrando..." : "Registrar asistencia"}
+          {audioActivo ? "Audio activado" : "Activar audio"}
         </button>
+
+        <div
+          className={`mt-4 rounded-xl px-4 py-3 text-center font-semibold ${
+            asistenciaRegistrada
+              ? "bg-emerald-600 text-white"
+              : "bg-gray-200 text-gray-600"
+          }`}
+        >
+          {asistenciaRegistrada
+            ? "✅ Asistencia registrada"
+            : "Esperando rostro..."}
+        </div>
       </section>
     </main>
   );
