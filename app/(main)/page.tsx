@@ -6,7 +6,8 @@ import {
   Wallet,
   ReceiptText,
   GraduationCap,
-  AlertCircle
+  AlertCircle,
+  ClipboardList
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -18,6 +19,12 @@ export default function Home() {
       href: "/vacaciones",
       icono: CalendarDays,
       disabled: false,
+    },
+    {
+      titulo:"Encuestas",
+      href:"#",
+      icono:ClipboardList,
+      disabled:true
     },
     {
       titulo: "Trámites",

@@ -36,8 +36,8 @@ type AccionManual = {
 };
 
 const empleadoDetectado = {
-  idempleado: "0102",
-  nombre: "Diego Trejo",
+  idempleado: "1466",
+  nombre: "JUAN DIEGO TREJO SANDOVAL",
 };
 
 export default function AsistenciaFacial() {
