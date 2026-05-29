@@ -177,6 +177,7 @@ export type Puesto = z.infer<typeof PuestoSchema>;
 
 
 export type EmpleadoAuthContext = Login & {
+  nombre: Vacacione['nombre']
   empleado:Vacacione
   solicitudes:Solicitud[]
 }
