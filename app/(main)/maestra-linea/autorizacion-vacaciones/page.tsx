@@ -239,7 +239,6 @@ export default function AutorizacionVacaciones() {
     setFiltroEstatus(hayPendientes ? "PENDIENTE" : "APROBADA");
     setPaginaActual(1);
   };
-  console.log(usuario)
 
   return (
     <main className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-10">

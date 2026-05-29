@@ -246,7 +246,6 @@ const esFechaOcupada = (fecha: string) => {
     return contador;
   };
 
-  console.log(usuario)
 
   const estaDentroDelPeriodoSolicitud = () => {
     const inicio = usuario?.empleado?.iniciocicloactual;
@@ -673,7 +672,6 @@ drawText(formatearFecha(fechaRegreso), 187, 525);
   }
 };
 
-  console.log(solicitudes)
 
   return (
     <section className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-12">

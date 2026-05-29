@@ -393,7 +393,6 @@ export default function Vacaciones() {
     return contador;
   };
 
-  console.log(usuario)
 
   const estaDentroDelPeriodoSolicitud = () => {
     const inicio = usuario?.empleado?.iniciocicloactual;
