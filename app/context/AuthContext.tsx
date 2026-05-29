@@ -1,51 +1,10 @@
 "use client"
 
+import { EmpleadoAuthContext } from "@/src/types/schemas"
 import { createContext, useContext, useEffect, useState } from "react"
 
-type Usuario={
-    id:number
-    idempleado:string
-    nombre:string
-    rol:string
-    subrol:string
-    actualizarpassword:boolean
-    bodega:string
-    linea:string
-    empleado:{
-      accionsugerida:string
-      antiguedad:number
-      turno:string
-      area:string
-      diasavencer:number
-      diasderecho:number
-      diasporvencer:number
-      diastomados:0
-      fechaingreso:string
-      fechacicloactual:string
-      id:number
-      idempleado:string
-      iniciocicloactual:string
-      fincicloactual:string
-      nombre:string
-      proporcionaldevengado:string
-      puesto:string
-      saldodisponible:string
-      semaforo:string
-      tipoempleado:string
-      solicitudes: {
-  id: number;
-  fechainicio: string;
-  fechatermino: string;
-  diastotales: number;
-  estatus: string;
-  motivorechazo: string | null;
-  fechacreacion: string;
-}[];
-    }
-}
-
 type AuthContextType={
-    usuario:Usuario | null
+    usuario:EmpleadoAuthContext | null
     token: string | null
      loading: boolean;
     login:(token:string)=>Promise<void>
@@ -55,9 +14,8 @@ type AuthContextType={
 
 const AuthContext = createContext<AuthContextType | null>(null)
 
-
 export function AuthProvider({children}:{children:React.ReactNode}){
-    const[usuario,setUsuario]=useState<Usuario | null>(null)
+    const[usuario,setUsuario]=useState<EmpleadoAuthContext | null>(null)
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const logout = () => {

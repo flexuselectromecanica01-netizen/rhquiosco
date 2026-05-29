@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { Save, Users, Pencil, RefreshCw } from "lucide-react";
 import { useAuth } from "@/app/context/AuthContext";
+import { SelectTabla } from "@/app/components/SelectTabla";
+import { Th } from "@/app/components/Th";
+import { Td } from "@/app/components/Td";
 
 type Rol = "SUPERVISOR" | "EMPLEADO";
 type Subrol = "MAESTRA" | "EMPLEADO";
@@ -423,53 +426,4 @@ export default function SupervisorEmpleadosPage() {
       </section>
     </main>
   );
-}
-
-function SelectTabla({
-  value,
-  opciones,
-  onChange,
-  disabled = false,
-}: {
-  value: string;
-  opciones: string[];
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <select
-      value={value}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-    >
-      {opciones.map((opcion) => (
-        <option key={opcion} value={opcion}>
-          {opcion}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function Th({
-  children,
-  align = "left",
-}: {
-  children: React.ReactNode;
-  align?: "left" | "right";
-}) {
-  return (
-    <th
-      className={`px-4 py-4 text-sm font-semibold text-gray-600 ${
-        align === "right" ? "text-right" : "text-left"
-      }`}
-    >
-      {children}
-    </th>
-  );
-}
-
-function Td({ children }: { children: React.ReactNode }) {
-  return <td className="px-4 py-4 text-sm text-gray-700">{children}</td>;
 }

@@ -176,3 +176,7 @@ export const PuestoSchema = z.object({
 export type Puesto = z.infer<typeof PuestoSchema>;
 
 
+export type EmpleadoAuthContext = Login & {
+  empleado:Vacacione
+  solicitudes:Solicitud[]
+}
