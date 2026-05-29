@@ -12,6 +12,8 @@ import {
   VacacioneFormulario,
   VacacioneSinTurno,
 } from "@/src/types/schemas";
+import { InfoRow } from "@/app/components/InfoRow";
+import { InputTexto } from "@/app/components/InputTexto";
 
 const formularioInicial: VacacioneFormulario = {
   idempleado: "",
@@ -48,7 +50,9 @@ const normalizarFechaInput = (fecha: string | Date | null | undefined) => {
 };
 
 export default function ImportarVacacionesPage() {
-  const { token } = useAuth();
+  const { token, usuario } = useAuth();
+
+  const [pestana, setPestana] = useState<"activos" | "eliminados">("activos");
 
   const [detalleEmpleado, setDetalleEmpleado] = useState<any | null>(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
@@ -71,6 +75,44 @@ export default function ImportarVacacionesPage() {
   const [empleados, setEmpleados] = useState<VacacioneSinTurno[]>([]);
   const [editandoId, setEditandoId] = useState<number | null>(null);
   const [cargando, setCargando] = useState(false);
+
+  const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
+const [empleadoAEliminar, setEmpleadoAEliminar] =
+  useState<VacacioneSinTurno | null>(null);
+const [passwordConfirmacion, setPasswordConfirmacion] = useState("");
+const [eliminando, setEliminando] = useState(false);
+
+
+const restaurarEmpleado = async (empleado: VacacioneSinTurno) => {
+  if (!empleado.id) return;
+
+  try {
+    setCargando(true);
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/${empleado.id}/restore`,
+      {
+        method: "PATCH",
+        headers: headersJson(),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.message || "Error al restaurar empleado");
+      return;
+    }
+
+    toast.success("Empleado restaurado correctamente");
+    await obtenerEmpleados(1, limite, busquedaIdEmpleado, "eliminados");
+  } catch (error) {
+    toast.error("No se pudo conectar con el servidor");
+  } finally {
+    setCargando(false);
+  }
+};
+
 
   const [formulario, setFormulario] =
     useState<VacacioneFormulario>(formularioInicial);
@@ -139,53 +181,57 @@ export default function ImportarVacacionesPage() {
   };
 
   const obtenerEmpleados = async (
-    page = pagina,
-    limit = limite,
-    idempleado = busquedaIdEmpleado
-  ) => {
-    try {
-      setCargando(true);
+  page = pagina,
+  limit = limite,
+  idempleado = busquedaIdEmpleado,
+  tipoPestana = pestana
+) => {
+  try {
+    setCargando(true);
 
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
 
-      if (idempleado.trim() !== "") {
-        params.append("idempleado", idempleado.trim());
-      }
-
-      const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_URL
-        }/vacaciones/paginado?${params.toString()}`,
-        {
-          headers: token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : undefined,
-        }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        toast.error(result.message || "Error al obtener empleados");
-        return;
-      }
-
-      setEmpleados(result.data);
-      setPagina(result.meta.page);
-      setLimite(result.meta.limit);
-      setTotalPaginas(result.meta.totalPages);
-      setTotalRegistros(result.meta.total);
-    } catch (error) {
-      toast.error("No se pudo conectar con el servidor");
-    } finally {
-      setCargando(false);
+    if (idempleado.trim() !== "") {
+      params.append("idempleado", idempleado.trim());
     }
-  };
+
+    const endpoint =
+      tipoPestana === "activos"
+        ? "/vacaciones/paginado"
+        : "/vacaciones/eliminados/paginado";
+
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}${endpoint}?${params.toString()}`,
+      {
+        headers: token
+          ? {
+              Authorization: `Bearer ${token}`,
+            }
+          : undefined,
+      }
+    );
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      toast.error(result.message || "Error al obtener empleados");
+      return;
+    }
+
+    setEmpleados(result.data);
+    setPagina(result.meta.page);
+    setLimite(result.meta.limit);
+    setTotalPaginas(result.meta.totalPages);
+    setTotalRegistros(result.meta.total);
+  } catch (error) {
+    toast.error("No se pudo conectar con el servidor");
+  } finally {
+    setCargando(false);
+  }
+};
 
   const actualizarVacaciones = async () => {
     try {
@@ -233,6 +279,26 @@ export default function ImportarVacacionesPage() {
     obtenerEmpleados(1, 5);
     obtenerCatalogos();
   }, []);
+
+  const cerrarModalEliminar = () => {
+  setModalEliminarAbierto(false);
+  setEmpleadoAEliminar(null);
+  setPasswordConfirmacion("");
+};
+
+const abrirModalEliminar = (empleado: VacacioneSinTurno) => {
+  if (!empleado.id) return;
+
+  if (empleado.idempleado === "0001") {
+    toast.error("El usuario administrador principal no se puede eliminar");
+    return;
+  }
+
+  setEmpleadoAEliminar(empleado);
+  setPasswordConfirmacion("");
+  setModalEliminarAbierto(true);
+};
+
 
   const obtenerDetalleEmpleado = async (id: number) => {
     try {
@@ -504,61 +570,81 @@ export default function ImportarVacacionesPage() {
     await obtenerDetalleEmpleado(empleado.id);
   };
 
-  const eliminarEmpleado = async (empleado: VacacioneSinTurno) => {
-    if (!empleado.id) return;
+  const eliminarEmpleado = async () => {
+  if (!empleadoAEliminar?.id) return;
 
-    if (empleado.idempleado === "0001") {
-      toast.error("El usuario administrador principal no se puede eliminar");
+  if (!passwordConfirmacion.trim()) {
+    toast.error("Ingresa tu contraseña para continuar");
+    return;
+  }
+
+  const empleado = empleadoAEliminar;
+
+  const esEmpleadoDeBaseDeDatos = empleado.id < 1000000000000;
+
+  if (!esEmpleadoDeBaseDeDatos) {
+    setEmpleados((prev) => prev.filter((item) => item.id !== empleado.id));
+
+    if (editandoId === empleado.id) {
+      limpiarFormulario();
+    }
+
+    toast.success("Registro eliminado localmente");
+    cerrarModalEliminar();
+    return;
+  }
+
+  try {
+    setEliminando(true);
+
+    const resPassword = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/login/verify-password`,
+      {
+        method: "POST",
+        headers: headersJson(),
+        body: JSON.stringify({
+          password: passwordConfirmacion,
+        }),
+      }
+    );
+
+    const dataPassword = await resPassword.json();
+
+    if (!resPassword.ok) {
+      toast.error(dataPassword.message || "Contraseña incorrecta");
       return;
     }
 
-    const confirmar = confirm("¿Seguro que deseas eliminar este registro?");
-
-    if (!confirmar) return;
-
-    const esEmpleadoDeBaseDeDatos = empleado.id < 1000000000000;
-
-    if (!esEmpleadoDeBaseDeDatos) {
-      setEmpleados((prev) => prev.filter((item) => item.id !== empleado.id));
-
-      if (editandoId === empleado.id) {
-        limpiarFormulario();
+    const resDelete = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/${empleado.id}/soft`,
+      {
+        method: "DELETE",
+        headers: headersJson(),
       }
+    );
 
-      toast.success("Registro eliminado localmente");
+    const dataDelete = await resDelete.json();
+
+    if (!resDelete.ok) {
+      toast.error(dataDelete.message || "Error al eliminar empleado");
       return;
     }
 
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/${empleado.id}`,
-        {
-          method: "DELETE",
-          headers: token
-            ? {
-                Authorization: `Bearer ${token}`,
-              }
-            : undefined,
-        }
-      );
+    toast.success("Empleado eliminado correctamente");
 
-      const data = await res.json();
+    await obtenerEmpleados();
 
-      if (!res.ok) {
-        toast.error(data.message || "Error al eliminar empleado");
-        return;
-      }
-
-      toast.success("Empleado eliminado correctamente");
-      await obtenerEmpleados();
-
-      if (editandoId === empleado.id) {
-        limpiarFormulario();
-      }
-    } catch (error) {
-      toast.error("No se pudo conectar con el servidor");
+    if (editandoId === empleado.id) {
+      limpiarFormulario();
     }
-  };
+
+    cerrarModalEliminar();
+  } catch (error) {
+    toast.error("No se pudo conectar con el servidor");
+  } finally {
+    setEliminando(false);
+  }
+};
 
   return (
     <main className="min-h-screen bg-gray-100 px-4 py-8 sm:px-6 lg:px-8">
@@ -810,7 +896,7 @@ export default function ImportarVacacionesPage() {
               <div className="flex flex-col gap-3 border-b border-gray-200 p-6 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-xl font-semibold text-gray-800">
-                    Empleados
+                     {pestana === "activos" ? "Empleados activos" : "Empleados eliminados"}
                   </h2>
                   <p className="mt-1 text-sm text-gray-500">
                     Mostrando {empleados.length} de {totalRegistros}
@@ -821,6 +907,43 @@ export default function ImportarVacacionesPage() {
                   Página {pagina} de {totalPaginas}
                 </div>
               </div>
+
+
+              <div className="border-b border-gray-200 bg-white px-6 pt-4">
+  <div className="flex gap-2">
+    <button
+      type="button"
+      onClick={() => {
+        setPestana("activos");
+        setBusquedaIdEmpleado("");
+        obtenerEmpleados(1, limite, "", "activos");
+      }}
+      className={`rounded-t-xl px-5 py-3 text-sm font-semibold transition ${
+        pestana === "activos"
+          ? "bg-[#009b63] text-white"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+    >
+      Activos
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setPestana("eliminados");
+        setBusquedaIdEmpleado("");
+        obtenerEmpleados(1, limite, "", "eliminados");
+      }}
+      className={`rounded-t-xl px-5 py-3 text-sm font-semibold transition ${
+        pestana === "eliminados"
+          ? "bg-red-600 text-white"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`}
+    >
+      Eliminados
+    </button>
+  </div>
+</div>
 
               <div className="border-b border-gray-200 bg-white px-6 py-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -927,31 +1050,44 @@ export default function ImportarVacacionesPage() {
                           </Td>
 
                           <td className="px-4 py-4">
-                            <div className="flex justify-end gap-2">
-                              <button
-                                type="button"
-                                onClick={() => editarEmpleado(empleado)}
-                                className="rounded-lg p-2 text-blue-600 transition cursor-pointer hover:bg-blue-50"
-                                title="Editar"
-                              >
-                                <Pencil size={18} />
-                              </button>
+  <div className="flex justify-end gap-2">
+    {pestana === "activos" ? (
+      <>
+        <button
+          type="button"
+          onClick={() => editarEmpleado(empleado)}
+          className="rounded-lg p-2 text-blue-600 transition cursor-pointer hover:bg-blue-50"
+          title="Editar"
+        >
+          <Pencil size={18} />
+        </button>
 
-                              <button
-                                type="button"
-                                onClick={() => eliminarEmpleado(empleado)}
-                                disabled={empleado.idempleado === "0001"}
-                                className={`rounded-lg p-2 transition cursor-pointer ${
-                                  empleado.idempleado === "0001"
-                                    ? "cursor-not-allowed text-gray-300"
-                                    : "text-red-600 hover:bg-red-50"
-                                }`}
-                                title="Eliminar"
-                              >
-                                <Trash2 size={18} />
-                              </button>
-                            </div>
-                          </td>
+        <button
+          type="button"
+          onClick={() => abrirModalEliminar(empleado)}
+          disabled={empleado.idempleado === "0001"}
+          className={`rounded-lg p-2 transition cursor-pointer ${
+            empleado.idempleado === "0001"
+              ? "cursor-not-allowed text-gray-300"
+              : "text-red-600 hover:bg-red-50"
+          }`}
+          title="Eliminar"
+        >
+          <Trash2 size={18} />
+        </button>
+      </>
+    ) : (
+      <button
+        type="button"
+        onClick={() => restaurarEmpleado(empleado)}
+        className="rounded-lg bg-[#009b63] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#007f52]"
+        title="Restaurar"
+      >
+        Restaurar
+      </button>
+    )}
+  </div>
+</td>
                         </tr>
                       ))
                     )}
@@ -970,7 +1106,7 @@ export default function ImportarVacacionesPage() {
                     onChange={(e) => {
                       const nuevoLimite = Number(e.target.value);
                       setLimite(nuevoLimite);
-                      obtenerEmpleados(1, nuevoLimite);
+                      obtenerEmpleados(1, nuevoLimite, busquedaIdEmpleado, pestana);
                     }}
                     className="rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-[#009b63]"
                   >
@@ -983,7 +1119,9 @@ export default function ImportarVacacionesPage() {
                   <button
                     type="button"
                     disabled={pagina <= 1 || cargando}
-                    onClick={() => obtenerEmpleados(pagina - 1, limite)}
+                    onClick={() =>
+  obtenerEmpleados(pagina - 1, limite, busquedaIdEmpleado, pestana)
+}
                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Anterior
@@ -992,7 +1130,9 @@ export default function ImportarVacacionesPage() {
                   <button
                     type="button"
                     disabled={pagina >= totalPaginas || cargando}
-                    onClick={() => obtenerEmpleados(pagina + 1, limite)}
+                   onClick={() =>
+  obtenerEmpleados(pagina + 1, limite, busquedaIdEmpleado, pestana)
+}
                     className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Siguiente
@@ -1205,45 +1345,78 @@ export default function ImportarVacacionesPage() {
           </div>
         </div>
       </section>
+      {modalEliminarAbierto && empleadoAEliminar && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <div className="mb-4">
+        <h3 className="text-xl font-bold text-gray-800">
+          Confirmar eliminación
+        </h3>
+
+        <p className="mt-2 text-sm text-gray-500">
+          Para eliminar este empleado, ingresa tu contraseña.
+        </p>
+      </div>
+
+      <div className="rounded-xl bg-red-50 p-4">
+        <p className="text-sm font-semibold text-red-700">
+          Empleado a eliminar
+        </p>
+
+        <p className="mt-1 text-sm text-red-600">
+          {empleadoAEliminar.nombre}
+        </p>
+
+        <p className="text-xs text-red-500">
+          ID empleado: {empleadoAEliminar.idempleado}
+        </p>
+      </div>
+
+      <div className="mt-5">
+        <label className="mb-1.5 block text-sm font-medium text-gray-600">
+          Contraseña
+        </label>
+
+        <input
+          type="password"
+          value={passwordConfirmacion}
+          onChange={(e) => setPasswordConfirmacion(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              eliminarEmpleado();
+            }
+          }}
+          placeholder="Ingresa tu contraseña"
+          className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-red-500 focus:ring-2 focus:ring-red-500/20"
+        />
+      </div>
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
+        <button
+          type="button"
+          onClick={cerrarModalEliminar}
+          disabled={eliminando}
+          className="rounded-xl border border-gray-300 px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          onClick={eliminarEmpleado}
+          disabled={eliminando}
+          className="rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {eliminando ? "Eliminando..." : "Eliminar"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </main>
   );
 }
 
-function InputTexto({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  maxLength,
-  disabled = false,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  type?: string;
-  maxLength?: number;
-  disabled?: boolean;
-}) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-sm font-medium text-gray-600">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        value={value}
-        maxLength={maxLength}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
-      />
-    </div>
-  );
-}
 
 function InputNumero({
   label,
@@ -1349,19 +1522,3 @@ function InfoCard({
   );
 }
 
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white px-4 py-3">
-      <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-right text-sm font-semibold text-gray-800">
-        {value}
-      </span>
-    </div>
-  );
-}
