@@ -617,13 +617,10 @@ const abrirModalEliminar = (empleado: VacacioneSinTurno) => {
       return;
     }
 
-    const resDelete = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/vacaciones/${empleado.id}/soft`,
-      {
+    const resDelete = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vacaciones/${empleado.id}/soft`,{
         method: "DELETE",
-        headers: headersJson(),
-      }
-    );
+        headers: headersJson()
+      });
 
     const dataDelete = await resDelete.json();
 

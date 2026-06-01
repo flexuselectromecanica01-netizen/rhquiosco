@@ -26,9 +26,7 @@ export default function ComponenteSecundario() {
       }
 
       try {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}`,
-          {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}`,{
             headers: {
               Authorization: `Bearer ${token}`,
             },
