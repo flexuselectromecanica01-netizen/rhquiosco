@@ -22,7 +22,7 @@ export default function AutorizacionVacaciones() {
   const [registrosPorPagina, setRegistrosPorPagina] = useState(5);
 
   const obtenerSolicitudesMaestras = useCallback(async () => {
-  if (!usuario?.bodega || !usuario?.linea || !token) {
+  if (!token) {
     setLoading(false);
     return;
   }
@@ -31,9 +31,7 @@ export default function AutorizacionVacaciones() {
     setLoading(true);
 
     const params = new URLSearchParams({
-      subrol: "MAESTRA",
-      bodega: usuario.bodega,
-      linea: usuario.linea,
+      subrol: "MAESTRA"
     });
 
     const res = await fetch(
