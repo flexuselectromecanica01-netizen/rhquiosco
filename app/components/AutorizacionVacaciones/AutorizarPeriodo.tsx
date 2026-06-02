@@ -10,7 +10,6 @@ import { toast } from "react-toastify";
 
 export default function AutorizacizarPeriodo() {
   const { usuario, token } = useAuth();
-
   const [solicitudes, setSolicitudes] = useState<SolicitudTabla[]>([]);
   const [loading, setLoading] = useState(true);
   const [procesandoId, setProcesandoId] = useState<number | null>(null);
@@ -20,6 +19,69 @@ export default function AutorizacizarPeriodo() {
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [registrosPorPagina, setRegistrosPorPagina] = useState(5);
+  const [modalCorreoAbierto, setModalCorreoAbierto] = useState(false);
+  const [accionSeleccionada, setAccionSeleccionada] = useState<"APROBAR" | "RECHAZAR" | null>(null);
+  const [solicitudSeleccionada, setSolicitudSeleccionada] = useState<SolicitudTabla | null>(null);
+  const [correoElectronico, setCorreoElectronico] = useState("");
+  const [motivoRechazo, setMotivoRechazo] = useState("");
+
+  const abrirModalCorreo = (
+  solicitud: SolicitudTabla,
+  accion: "APROBAR" | "RECHAZAR"
+) => {
+  setSolicitudSeleccionada(solicitud);
+  setAccionSeleccionada(accion);
+  setCorreoElectronico("");
+  setMotivoRechazo("");
+  setModalCorreoAbierto(true);
+};
+
+const cerrarModalCorreo = () => {
+  setModalCorreoAbierto(false);
+  setSolicitudSeleccionada(null);
+  setAccionSeleccionada(null);
+  setCorreoElectronico("");
+  setMotivoRechazo("");
+};
+
+const confirmarAccionConCorreo = async () => {
+  if (!solicitudSeleccionada || !accionSeleccionada) return;
+
+  if (!correoElectronico.trim()) {
+    toast.warning("Debes escribir un correo electrónico");
+    return;
+  }
+
+  const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+    correoElectronico.trim()
+  );
+
+  if (!correoValido) {
+    toast.warning("Escribe un correo electrónico válido");
+    return;
+  }
+
+  if (accionSeleccionada === "RECHAZAR" && !motivoRechazo.trim()) {
+    toast.warning("Debes escribir un motivo de rechazo");
+    return;
+  }
+
+  if (accionSeleccionada === "APROBAR") {
+    await aprobarSolicitud(solicitudSeleccionada.id, correoElectronico.trim());
+  }
+
+  if (accionSeleccionada === "RECHAZAR") {
+    await rechazarSolicitud(
+      solicitudSeleccionada.id,
+      motivoRechazo.trim(),
+      correoElectronico.trim()
+    );
+  }
+
+  cerrarModalCorreo();
+};
+
+  
 
   const obtenerSolicitudesPorAsignacion = useCallback(async () => {
   if (!usuario?.bodega || !usuario?.linea || !token) {
@@ -91,86 +153,89 @@ export default function AutorizacizarPeriodo() {
     obtenerSolicitudesPorAsignacion();
   }, [obtenerSolicitudesPorAsignacion]);
 
-  const aprobarSolicitud = async (id: number) => {
-    if (!token) {
-      toast.warning("Sesión expirada. Inicia sesión nuevamente.");
-      return;
-    }
+  const aprobarSolicitud = async (id: number, correoElectronico: string) => {
+  if (!token) {
+    toast.warning("Sesión expirada. Inicia sesión nuevamente.");
+    return;
+  }
 
-    try {
-      setProcesandoId(id);
+  try {
+    setProcesandoId(id);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}/aprobar`,
-        {
-          method: "PATCH",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || "Error al aprobar solicitud");
-        return;
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}/aprobar`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          correoElectronico,
+        }),
       }
+    );
 
-      toast.success("Solicitud aprobada correctamente");
-      await obtenerSolicitudesPorAsignacion();
-    } catch (error) {
-      toast.warning("No se pudo conectar con el servidor");
-    } finally {
-      setProcesandoId(null);
-    }
-  };
+    const data = await res.json();
 
-  const rechazarSolicitud = async (id: number) => {
-    if (!token) {
-      toast.warning("Sesión expirada. Inicia sesión nuevamente.");
+    if (!res.ok) {
+      toast.error(data.message || "Error al aprobar solicitud");
       return;
     }
 
-    const motivo = prompt("Escribe el motivo del rechazo:");
+    toast.success("Solicitud aprobada correctamente");
+    await obtenerSolicitudesPorAsignacion();
+  } catch (error) {
+    toast.warning("No se pudo conectar con el servidor");
+  } finally {
+    setProcesandoId(null);
+  }
+};
 
-    if (!motivo || motivo.trim().length === 0) {
-      toast.warning("Debes escribir un motivo de rechazo");
-      return;
-    }
 
-    try {
-      setProcesandoId(id);
+ const rechazarSolicitud = async (
+  id: number,
+  motivo: string,
+  correoElectronico: string
+) => {
+  if (!token) {
+    toast.warning("Sesión expirada. Inicia sesión nuevamente.");
+    return;
+  }
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}/rechazar`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            motivorechazo: motivo.trim(),
-          }),
-        }
-      );
+  try {
+    setProcesandoId(id);
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        toast.error(data.message || "Error al rechazar solicitud");
-        return;
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/solicitudes/${id}/rechazar`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          motivorechazo: motivo.trim(),
+          correoElectronico,
+        }),
       }
+    );
 
-      toast.success("Solicitud rechazada correctamente");
-      await obtenerSolicitudesPorAsignacion();
-    } catch (error) {
-      toast.warning("No se pudo conectar con el servidor");
-    } finally {
-      setProcesandoId(null);
+    const data = await res.json();
+
+    if (!res.ok) {
+      toast.error(data.message || "Error al rechazar solicitud");
+      return;
     }
-  };
+
+    toast.success("Solicitud rechazada correctamente");
+    await obtenerSolicitudesPorAsignacion();
+  } catch (error) {
+    toast.warning("No se pudo conectar con el servidor");
+  } finally {
+    setProcesandoId(null);
+  }
+};
 
   const claseEstatus = (estatus: string) => {
     switch (estatus) {
@@ -482,7 +547,7 @@ export default function AutorizacizarPeriodo() {
                             <button
                               type="button"
                               disabled={!esPendiente || procesando}
-                              onClick={() => aprobarSolicitud(solicitud.id)}
+                              onClick={() => abrirModalCorreo(solicitud,"APROBAR")}
                               className="inline-flex items-center gap-2 rounded-xl bg-[#009b63] px-4 py-2 text-white transition hover:bg-[#007f52] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <Check size={18} />
@@ -492,7 +557,7 @@ export default function AutorizacizarPeriodo() {
                             <button
                               type="button"
                               disabled={!esPendiente || procesando}
-                              onClick={() => rechazarSolicitud(solicitud.id)}
+                              onClick={() => abrirModalCorreo(solicitud, "RECHAZAR")}
                               className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <X size={18} />
@@ -546,6 +611,97 @@ export default function AutorizacizarPeriodo() {
           </>
         )}
       </section>
+      {modalCorreoAbierto && solicitudSeleccionada && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+    <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+      <h2 className="text-xl font-bold text-gray-800">
+        {accionSeleccionada === "APROBAR"
+          ? "Aprobar solicitud"
+          : "Rechazar solicitud"}
+      </h2>
+
+      <p className="mt-2 text-sm text-gray-500">
+        Se enviará una notificación al correo electrónico indicado.
+      </p>
+
+      <div className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+        <p>
+          <span className="font-semibold text-gray-800">Empleado:</span>{" "}
+          {solicitudSeleccionada.empleado}
+        </p>
+
+        <p>
+          <span className="font-semibold text-gray-800">Solicitud:</span> #
+          {solicitudSeleccionada.id}
+        </p>
+
+        <p>
+          <span className="font-semibold text-gray-800">Fechas:</span>{" "}
+          {formatearFecha(solicitudSeleccionada.fechaInicio)} al{" "}
+          {formatearFecha(solicitudSeleccionada.fechaFin)}
+        </p>
+      </div>
+
+      <div className="mt-5">
+        <label className="mb-1 block text-sm font-medium text-gray-700">
+          Enviar a correo electrónico
+        </label>
+
+        <input
+          type="email"
+          value={correoElectronico}
+          onChange={(e) => setCorreoElectronico(e.target.value)}
+          placeholder="ejemplo@empresa.com"
+          className="w-full rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-[#009b63] focus:ring-2 focus:ring-[#009b63]/20"
+        />
+      </div>
+
+      {accionSeleccionada === "RECHAZAR" && (
+        <div className="mt-4">
+          <label className="mb-1 block text-sm font-medium text-gray-700">
+            Motivo de rechazo
+          </label>
+
+          <textarea
+            value={motivoRechazo}
+            onChange={(e) => setMotivoRechazo(e.target.value)}
+            placeholder="Escribe el motivo del rechazo"
+            rows={4}
+            className="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm outline-none transition focus:border-red-600 focus:ring-2 focus:ring-red-600/20"
+          />
+        </div>
+      )}
+
+      <div className="mt-6 flex justify-end gap-3">
+        <button
+          type="button"
+          onClick={cerrarModalCorreo}
+          disabled={procesandoId !== null}
+          className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          onClick={confirmarAccionConCorreo}
+          disabled={procesandoId !== null}
+          className={`rounded-xl px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50 ${
+            accionSeleccionada === "APROBAR"
+              ? "bg-[#009b63] hover:bg-[#007f52]"
+              : "bg-red-600 hover:bg-red-700"
+          }`}
+        >
+          {procesandoId !== null
+            ? "Procesando..."
+            : accionSeleccionada === "APROBAR"
+            ? "Confirmar aprobación"
+            : "Confirmar rechazo"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </main>
   );
 }

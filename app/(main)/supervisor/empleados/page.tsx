@@ -48,12 +48,6 @@ const lineas: Linea[] = [
   "L6",
   "L7",
   "L8",
-  "L9",
-  "L10",
-  "L11",
-  "L12",
-  "L13",
-  "L14",
   "CALIDAD"
 ];
 
@@ -300,7 +294,7 @@ export default function SupervisorEmpleadosPage() {
                         <Td>
                           <SelectTabla
                             value={usuario.rol}
-                            disabled={!editando}
+                            disabled={true}
                             opciones={roles}
                             onChange={(value) =>
                               actualizarUsuario(usuario.id, "rol", value as Rol)
