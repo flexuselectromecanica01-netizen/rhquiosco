@@ -54,6 +54,9 @@ export default function Header() {
                 <p className="text-xs text-gray-500">
                   {usuario?.nombre ?? "Usuario"}
                 </p>
+                <p className="text-xs text-gray-500">
+                  {usuario?.correoElectronico ?? "Usuario"}
+                </p>
               </div>
 
               <Link

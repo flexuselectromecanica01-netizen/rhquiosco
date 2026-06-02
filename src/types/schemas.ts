@@ -117,6 +117,7 @@ export const LoginSchema = z.object({
   subrol: SubrolSistemaSchema,
   bodega: BodegaSistemaSchema,
   linea: LineaSistemaSchema,
+  correoElectronico:z.string()
 });
 
 export type Login = z.infer<typeof LoginSchema>;

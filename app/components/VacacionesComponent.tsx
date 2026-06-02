@@ -672,7 +672,7 @@ drawText(formatearFecha(fechaRegreso), 187, 525);
   }
 };
 
-
+  console.log(usuario)
   return (
     <section className="bg-gray-100 px-4 py-8 sm:px-6 sm:py-12">
       <div className="mx-auto max-w-6xl">
