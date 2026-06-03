@@ -40,9 +40,6 @@ export default function RootLayout({children,}: Readonly<{children: React.ReactN
           <ToastContainer
             position="top-right"
             autoClose={3000}
-            closeOnClick
-            pauseOnHover
-            draggable
           />
           </AuthProvider>
         </main>

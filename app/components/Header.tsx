@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { UserCircle, LogOut, KeyRound, ShieldCheck } from "lucide-react";
+import { UserCircle, LogOut, KeyRound, ShieldCheck,Mail } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../context/AuthContext";
@@ -66,6 +66,15 @@ export default function Header() {
               >
                 <ShieldCheck size={18} />
                 Aviso de privacidad
+              </Link>
+
+              <Link
+                href={`/update-email/${usuario?.id}`}
+                onClick={() => setOpenMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-100 transition"
+              >
+                <Mail size={18} />
+                Actualizar correo
               </Link>
 
               <Link
