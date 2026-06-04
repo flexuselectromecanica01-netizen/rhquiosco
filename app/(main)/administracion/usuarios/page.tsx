@@ -34,6 +34,194 @@ const formularioInicial: VacacioneFormulario = {
   semaforo: "",
   accionsugerida: "",
 };
+const formatearFechaInput = (fecha: Date) => {
+  const year = fecha.getFullYear();
+  const month = String(fecha.getMonth() + 1).padStart(2, "0");
+  const day = String(fecha.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+const crearFechaLocal = (fecha: string | Date) => {
+  if (fecha instanceof Date) {
+    return new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+  }
+
+  const [year, month, day] = fecha.split("-").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const sumarMeses = (fecha: Date, meses: number) => {
+  const nuevaFecha = new Date(fecha);
+  nuevaFecha.setMonth(nuevaFecha.getMonth() + meses);
+  return nuevaFecha;
+};
+
+const sumarAnios = (fecha: Date, anios: number) => {
+  const nuevaFecha = new Date(fecha);
+  nuevaFecha.setFullYear(nuevaFecha.getFullYear() + anios);
+  return nuevaFecha;
+};
+
+const calcularDiasVacacionesLey = (antiguedad: number) => {
+  if (antiguedad <= 0) return 0;
+
+  if (antiguedad === 1) return 12;
+  if (antiguedad === 2) return 14;
+  if (antiguedad === 3) return 16;
+  if (antiguedad === 4) return 18;
+  if (antiguedad === 5) return 20;
+
+  if (antiguedad >= 6 && antiguedad <= 10) return 22;
+  if (antiguedad >= 11 && antiguedad <= 15) return 24;
+  if (antiguedad >= 16 && antiguedad <= 20) return 26;
+  if (antiguedad >= 21 && antiguedad <= 25) return 28;
+  if (antiguedad >= 26 && antiguedad <= 30) return 30;
+  if (antiguedad >= 31 && antiguedad <= 35) return 32;
+
+  return 32;
+};
+
+const obtenerUltimoAniversarioCumplido = (
+  fechaIngreso: string | Date,
+  hoy = new Date()
+) => {
+  const ingreso = crearFechaLocal(fechaIngreso);
+
+  let aniversario = new Date(
+    hoy.getFullYear(),
+    ingreso.getMonth(),
+    ingreso.getDate()
+  );
+
+  if (hoy < aniversario) {
+    aniversario = new Date(
+      hoy.getFullYear() - 1,
+      ingreso.getMonth(),
+      ingreso.getDate()
+    );
+  }
+
+  return aniversario;
+};
+
+const calcularAntiguedad = (fechaIngreso: string | Date, hoy = new Date()) => {
+  const ingreso = crearFechaLocal(fechaIngreso);
+
+  let antiguedad = hoy.getFullYear() - ingreso.getFullYear();
+
+  const aniversarioEsteAnio = new Date(
+    hoy.getFullYear(),
+    ingreso.getMonth(),
+    ingreso.getDate()
+  );
+
+  if (hoy < aniversarioEsteAnio) {
+    antiguedad--;
+  }
+
+  return Math.max(antiguedad, 0);
+};
+
+const calcularMesesTranscurridos = (inicio: Date, hoy = new Date()) => {
+  let meses =
+    (hoy.getFullYear() - inicio.getFullYear()) * 12 +
+    (hoy.getMonth() - inicio.getMonth());
+
+  if (hoy.getDate() < inicio.getDate()) {
+    meses--;
+  }
+
+  return Math.max(meses, 0);
+};
+
+const calcularDiasEntreFechas = (desde: Date, hasta: Date) => {
+  const inicio = new Date(
+    desde.getFullYear(),
+    desde.getMonth(),
+    desde.getDate()
+  );
+
+  const fin = new Date(
+    hasta.getFullYear(),
+    hasta.getMonth(),
+    hasta.getDate()
+  );
+
+  const diferencia = fin.getTime() - inicio.getTime();
+
+  return Math.max(Math.ceil(diferencia / (1000 * 60 * 60 * 24)), 0);
+};
+
+const calcularSemaforo = (saldoDisponible: number) => {
+  if (saldoDisponible <= 0) return "SINSALDO";
+  if (saldoDisponible <= 3) return "ATENCION";
+  return "CONTROLADO";
+};
+
+const calcularVacacionesPorFechaIngreso = (
+  fechaIngreso: string,
+  diasTomados: number = 0
+) => {
+  if (!fechaIngreso) {
+    return {
+      antiguedad: 0,
+      diasderecho: 0,
+      iniciocicloactual: "",
+      fincicloactual: "",
+      proporcionaldevengado: "0.00",
+      saldodisponible: "0.00",
+      diasporvencer: 0,
+      diasavencer: 0,
+      semaforo: "",
+    };
+  }
+
+  const ingreso = crearFechaLocal(fechaIngreso);
+  const hoy = new Date();
+
+  const fechaSeisMeses = sumarMeses(ingreso, 6);
+  const fechaPrimerAniversario = sumarAnios(ingreso, 1);
+
+  const antiguedad = calcularAntiguedad(fechaIngreso, hoy);
+
+  let diasderecho = 0;
+  let inicioCiclo: Date;
+  let finCiclo: Date;
+
+  if (hoy < fechaSeisMeses) {
+    diasderecho = 0;
+    inicioCiclo = fechaSeisMeses;
+    finCiclo = sumarMeses(inicioCiclo, 4);
+  } else if (hoy >= fechaSeisMeses && hoy < fechaPrimerAniversario) {
+    diasderecho = 6;
+    inicioCiclo = fechaSeisMeses;
+    finCiclo = sumarMeses(inicioCiclo, 4);
+  } else {
+    diasderecho = calcularDiasVacacionesLey(antiguedad);
+    inicioCiclo = obtenerUltimoAniversarioCumplido(fechaIngreso, hoy);
+    finCiclo = sumarMeses(inicioCiclo, 5);
+  }
+
+  const proporcionaldevengado = calcularMesesTranscurridos(ingreso, hoy);
+
+  const saldoDisponible = diasderecho - diasTomados;
+  const diasPorVencer = saldoDisponible;
+  const diasAVencer = calcularDiasEntreFechas(hoy, finCiclo);
+  const semaforo = calcularSemaforo(saldoDisponible);
+
+  return {
+    antiguedad,
+    diasderecho,
+    iniciocicloactual: formatearFechaInput(inicioCiclo),
+    fincicloactual: formatearFechaInput(finCiclo),
+    proporcionaldevengado: proporcionaldevengado.toFixed(2),
+    saldodisponible: saldoDisponible.toFixed(2),
+    diasporvencer: diasPorVencer,
+    diasavencer: diasAVencer,
+    semaforo,
+  };
+};
 
 const normalizarFechaInput = (fecha: string | Date | null | undefined) => {
   if (!fecha) return "";
@@ -48,6 +236,7 @@ const normalizarFechaInput = (fecha: string | Date | null | undefined) => {
 
   return String(fecha).split("T")[0];
 };
+
 
 export default function ImportarVacacionesPage() {
   const { token, usuario } = useAuth();
@@ -81,6 +270,8 @@ const [empleadoAEliminar, setEmpleadoAEliminar] =
   useState<VacacioneSinTurno | null>(null);
 const [passwordConfirmacion, setPasswordConfirmacion] = useState("");
 const [eliminando, setEliminando] = useState(false);
+
+
 
 
 const restaurarEmpleado = async (empleado: VacacioneSinTurno) => {
@@ -118,6 +309,28 @@ const restaurarEmpleado = async (empleado: VacacioneSinTurno) => {
 
   const [formulario, setFormulario] =
     useState<VacacioneFormulario>(formularioInicial);
+
+  useEffect(() => {
+  if (!formulario.fechaingreso) return;
+
+  const calculo = calcularVacacionesPorFechaIngreso(
+    formulario.fechaingreso,
+    Number(formulario.diastomados ?? 0)
+  );
+
+  setFormulario((prev) => ({
+    ...prev,
+    antiguedad: calculo.antiguedad,
+    diasderecho: calculo.diasderecho,
+    iniciocicloactual: calculo.iniciocicloactual,
+    fincicloactual: calculo.fincicloactual,
+    proporcionaldevengado: calculo.proporcionaldevengado,
+    saldodisponible: calculo.saldodisponible,
+    diasporvencer: calculo.diasporvencer,
+    diasavencer: calculo.diasavencer,
+    semaforo: calculo.semaforo as Vacacione["semaforo"],
+  }));
+}, [formulario.fechaingreso, formulario.diastomados]);
 
   const headersJson = () => {
     const headers: HeadersInit = {
@@ -468,6 +681,28 @@ const abrirModalEliminar = (empleado: VacacioneSinTurno) => {
   };
 
   const guardarEmpleado = async () => {
+    const crearPayloadVacaciones = () => {
+  return {
+    idempleado: formulario.idempleado,
+    nombre: formulario.nombre,
+    tipoempleado: formulario.tipoempleado,
+    area: formulario.area,
+    puesto: formulario.puesto,
+    fechaingreso: formulario.fechaingreso,
+
+    antiguedad: Number(formulario.antiguedad),
+    diasderecho: Number(formulario.diasderecho),
+    iniciocicloactual: formulario.iniciocicloactual,
+    fincicloactual: formulario.fincicloactual,
+    proporcionaldevengado: Number(formulario.proporcionaldevengado),
+    diastomados: Number(formulario.diastomados),
+    saldodisponible: Number(formulario.saldodisponible),
+    diasporvencer: Number(formulario.diasporvencer),
+    diasavencer: Number(formulario.diasavencer),
+    semaforo: formulario.semaforo,
+    accionsugerida: formulario.accionsugerida,
+  };
+};
     if (!validarFormulario()) return;
 
     if (editandoId !== null) {
@@ -485,7 +720,7 @@ const abrirModalEliminar = (empleado: VacacioneSinTurno) => {
             {
               method: "PATCH",
               headers: headersJson(),
-              body: JSON.stringify(formulario),
+              body: JSON.stringify(crearPayloadVacaciones),
             }
           );
 
@@ -528,10 +763,21 @@ const abrirModalEliminar = (empleado: VacacioneSinTurno) => {
     }
 
     try {
+      const payload = {
+  ...formulario,
+  antiguedad: Number(formulario.antiguedad),
+  diasderecho: Number(formulario.diasderecho),
+  proporcionaldevengado: Number(formulario.proporcionaldevengado),
+  diastomados: Number(formulario.diastomados),
+  saldodisponible: Number(formulario.saldodisponible),
+  diasporvencer: Number(formulario.diasporvencer),
+  diasavencer: Number(formulario.diasavencer),
+};
+  console.log(payload)
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/vacaciones`, {
         method: "POST",
         headers: headersJson(),
-        body: JSON.stringify(formulario),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -544,7 +790,19 @@ const abrirModalEliminar = (empleado: VacacioneSinTurno) => {
       toast.success("Empleado creado correctamente");
       await obtenerEmpleados();
       limpiarFormulario();
+      if (!res.ok) {
+  console.log("ERROR BACKEND:", data);
+
+  toast.error(
+    Array.isArray(data.message)
+      ? data.message.join(", ")
+      : data.message || "Error al guardar empleado"
+  );
+
+  return;
+}
     } catch (error) {
+      
       toast.error("No se pudo conectar con el servidor");
     }
   };

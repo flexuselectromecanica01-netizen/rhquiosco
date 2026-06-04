@@ -11,7 +11,6 @@ import {
   UserCheck,
   Link,
 } from "lucide-react";
-import Header from "../components/Header";
 import Footer from "../components/Footer";
 import Image from "next/image";
 
